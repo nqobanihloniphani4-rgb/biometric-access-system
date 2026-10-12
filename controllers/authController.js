@@ -45,3 +45,34 @@ exports.seedAdmin = async () => {
     console.error('Error seeding admin user:', err.message);
   }
 };
+
+// Reset Admin Password securely
+exports.resetPassword = async (req, res) => {
+  const { secretKey, newPassword } = req.body;
+  
+  // Verify against a secret reset key in your environment variables
+  if (secretKey !== process.env.RESET_SECRET) {
+    return res.status(403).json({ success: false, error: 'Unauthorized reset attempt' });
+  }
+
+  if (!newPassword || newPassword.length < 8) {
+    return res.status(400).json({ success: false, error: 'Password must be at least 8 characters long' });
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    const result = await pool.query(
+      'UPDATE admin_users SET password_hash = $1 WHERE username = $2 RETURNING username',
+      [hashedPassword, 'admin']
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Admin user not found' });
+    }
+
+    res.json({ success: true, message: 'Admin password successfully updated!' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
