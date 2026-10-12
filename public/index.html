@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biometric Door Terminal Kiosk</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <h2>🚪 Door Entry Terminal</h2>
+        <div class="nav-links">
+            <a href="index.html" class="active">Terminal Kiosk</a>
+            <a href="admin-login.html">Admin Login</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+            
+            <!-- VIRTUAL HARDWARE SIMULATOR -->
+            <div class="card" style="border-top: 4px solid #2980b9;">
+                <h2>🧪 Virtual Hardware Simulator</h2>
+                <p style="font-size: 0.9em; color: #555;">Simulate scanning a fingerprint slot on the ESP32 sensor.</p>
+                
+                <div style="margin-top: 15px;">
+                    <label>Enter Employee Code or Slot ID</label>
+                    <input type="text" id="simUserQuery" placeholder="e.g. EMP-101 or Slot Number">
+                </div>
+
+                <div style="margin-top: 15px;">
+                    <label>Movement Direction</label>
+                    <select id="simMovementType" style="margin-top: 5px;">
+                        <option value="ENTRY">ENTRY (Entering Office)</option>
+                        <option value="EXIT">EXIT (Leaving Office)</option>
+                    </select>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+                    <button id="btnSimNormal" style="background-color: #27ae60;">
+                        🟢 Button 1: Normal Door Open
+                    </button>
+                    <button id="btnSimDuress" style="background-color: #c0392b;">
+                        🚨 Button 2: Silent Duress Open
+                    </button>
+                </div>
+            </div>
+
+            <!-- LIVE ACCESS EVENT LOG -->
+            <div class="card" style="border-top: 4px solid #8e44ad;">
+                <h2>📋 Live Terminal Feed</h2>
+                <p style="font-size: 0.9em; color: #555;">Real-time door authentication status.</p>
+                
+                <div id="liveStatusBox" style="padding: 15px; background: #f8f9fa; border-radius: 6px; text-align: center; margin-top: 15px;">
+                    <p style="font-size: 1.1em; color: #333; margin: 0;"><strong>Status:</strong> Waiting for Biometric Scan...</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 5-SECOND INDIVIDUAL VERIFICATION POPUP -->
+    <div id="kioskOverlay" class="kiosk-popup" style="display: none;">
+        <div class="kiosk-popup-content">
+            <h2 id="kioskTitle">ACCESS GRANTED</h2>
+            <p style="font-size: 1.2em; font-weight: bold;" id="kioskName">John Doe</p>
+            <p style="color: #666;" id="kioskDept">Engineering (EMP-101)</p>
+            <p style="font-size: 0.85em; color: #888; margin-top: 20px;">Screen will auto-reset in 5 seconds...</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

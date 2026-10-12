@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Portal - Admin Login</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <h2>🔐 Security Portal</h2>
+        <div class="nav-links">
+            <a href="index.html">Terminal Kiosk</a>
+            <a href="admin-login.html" class="active">Admin Login</a>
+        </div>
+    </nav>
+
+    <div class="container" style="max-width: 450px; margin-top: 50px;">
+        <div class="card">
+            <h2>Admin Login</h2>
+            <form id="loginForm">
+                <div>
+                    <label>Username</label>
+                    <input type="text" id="loginUsername" required placeholder="admin">
+                </div>
+                <div>
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" required placeholder="••••••••">
+                </div>
+                <button type="submit">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    localStorage.setItem('adminToken', data.token);
+                    localStorage.setItem('adminRole', data.role);
+                    window.location.href = 'admin-dashboard.html'; // Updated target page
+
+                } else {
+                    alert(`Login Failed: ${data.error}`);
+                }
+            } catch (err) {
+                console.error('Login error:', err);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personnel Directory</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <h2>👥 Employee Management Directory</h2>
+        <div class="nav-links">
+            <a href="attendance-logs.html">Attendance Logs</a>
+            <a href="registered-users.html" class="active">Registered Personnel</a>
+            <button id="btnLogout" class="btn-logout">Logout</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- 1. ENROLLMENT FORM CARD -->
+        <div class="card">
+            <h2>Enroll New Personnel</h2>
+            <form id="registerForm" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px;">
+                <div>
+                    <label>Full Name</label>
+                    <input type="text" id="fullName" required placeholder="e.g. Jane Doe">
+                </div>
+                <div>
+                    <label>ID Number</label>
+                    <input type="text" id="idNumber" required placeholder="e.g. 9801015800080">
+                </div>
+                <div>
+                    <label>Employee Code</label>
+                    <input type="text" id="empCode" required placeholder="e.g. EMP-105">
+                </div>
+                <div>
+                    <label>Contact Number</label>
+                    <input type="tel" id="contactNumber" required placeholder="e.g. 0712345678">
+                </div>
+                <div>
+                    <label>Email Address</label>
+                    <input type="email" id="email" required placeholder="e.g. jane@example.com">
+                </div>
+                <div>
+                    <label>Department</label>
+                    <select id="department" required>
+                        <option value="" disabled selected>Select Department</option>
+                        <option value="Engineering">Engineering</option>
+                        <option value="ICT">ICT</option>
+                        <option value="Human Resources">Human Resources</option>
+                        <option value="Operations">Operations</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Marketing">Marketing</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Role</label>
+                    <select id="roleSelect">
+                        <option value="EMPLOYEE">Standard Employee</option>
+                        <option value="ADMIN">Administrator</option>
+                    </select>
+                </div>
+                <div style="grid-column: span 3; margin-top: 10px;">
+                    <button type="submit" class="btn-primary" style="width: 100%; padding: 12px;">Register Personnel</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 2. DIRECTORY TABLE CARD -->
+        <div class="card" style="margin-top: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>Enrolled Employees</h2>
+                <div style="background: #e9ecef; padding: 6px 14px; border-radius: 20px; font-weight: bold; font-size: 0.95em;">
+                    Total Registered: <span id="totalPersonnelCount" style="color: #2c3e50;">0</span>
+                </div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                    <thead>
+                        <tr style="background: #f8f9fa; text-align: left;">
+                            <th style="padding: 12px;">#</th>
+                            <th style="padding: 12px;">Name</th>
+                            <th style="padding: 12px;">ID Number</th>
+                            <th style="padding: 12px;">Employee Code</th>
+                            <th style="padding: 12px;">Contact Number</th>
+                            <th style="padding: 12px;">Email</th>
+                            <th style="padding: 12px;">Department</th>
+                            <th style="padding: 12px;">Enrolled Date</th>
+                            <th style="padding: 12px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTable">
+                        <!-- Populated via app.js -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT MODAL -->
+    <div id="editModal" class="kiosk-popup" style="display: none;">
+        <div class="kiosk-popup-content" style="text-align: left; max-width: 500px; width: 90%;">
+            <h3>Edit Personnel Details</h3>
+            <form id="editForm" style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
+                <input type="hidden" id="editUserId">
+                <div>
+                    <label>Full Name</label>
+                    <input type="text" id="editFullName" required style="width: 100%;">
+                </div>
+                <div>
+                    <label>ID Number</label>
+                    <input type="text" id="editIdNumber" required style="width: 100%;">
+                </div>
+                <div>
+                    <label>Employee Code</label>
+                    <input type="text" id="editEmployeeCode" required style="width: 100%;">
+                </div>
+                <div>
+                    <label>Contact Number</label>
+                    <input type="tel" id="editContactNumber" required style="width: 100%;">
+                </div>
+                <div>
+                    <label>Email Address</label>
+                    <input type="email" id="editEmail" required style="width: 100%;">
+                </div>
+                <div>
+                    <label>Department</label>
+                    <select id="editDepartment" required style="width: 100%; padding: 8px;">
+                        <option value="Engineering">Engineering</option>
+                        <option value="ICT">ICT</option>
+                        <option value="Human Resources">Human Resources</option>
+                        <option value="Operations">Operations</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Marketing">Marketing</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button type="submit" class="btn-primary" style="flex: 1;">Save Changes</button>
+                    <button type="button" onclick="closeEditModal()" style="flex: 1; background-color: #7f8c8d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

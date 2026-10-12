@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Portal - Personnel Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <h2>🔐 Security Portal</h2>
+        <div class="nav-links">
+            <a href="index.html">Terminal Kiosk</a>
+            <a href="admin-dashboard.html" class="active">Personnel Management</a>
+            <a href="attendance-logs.html">Attendance Logs</a>
+            <button id="btnLogout" style="background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Logout</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card">
+            <h2>👥 Personnel Management & Biometric Enrollment</h2>
+            <p style="color: #666; margin-bottom: 20px;">Register new biometric templates or manage existing enrolled personnel records.</p>
+            
+            <!-- 1. ENROLLMENT FORM -->
+            <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                <h3 style="margin-top: 0;">Enroll New Personnel</h3>
+                <form id="registerForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label>Full Name</label>
+                        <input type="text" id="fullName" required placeholder="e.g. John Doe">
+                    </div>
+                    <div>
+                        <label>Employee Code</label>
+                        <input type="text" id="empCode" required placeholder="e.g. EMP-101">
+                    </div>
+                    <div>
+                        <label>Fingerprint Slot ID (1-127)</label>
+                        <input type="number" id="slotId" min="1" max="127" required placeholder="e.g. 5">
+                    </div>
+                    <div>
+                        <label>Department</label>
+                        <input type="text" id="department" required placeholder="e.g. Security">
+                    </div>
+                    <div style="grid-column: span 2;">
+                        <button type="submit" style="width: 100%;">Enroll Employee & Assign Slot</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 2. DIRECTORY TABLE -->
+            <h3>Enrolled Personnel Directory</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <thead>
+                    <tr style="background: #eee; text-align: left;">
+                        <th style="padding: 10px;">Slot ID</th>
+                        <th style="padding: 10px;">Full Name</th>
+                        <th style="padding: 10px;">Employee Code</th>
+                        <th style="padding: 10px;">Department</th>
+                        <th style="padding: 10px;">Registered Date</th>
+                        <th style="padding: 10px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTable">
+                    <!-- Populated via fetchUsers() -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- EDIT MODAL -->
+    <div id="editModal" class="kiosk-popup" style="display: none;">
+        <div class="kiosk-popup-content" style="text-align: left; max-width: 400px;">
+            <h3>Edit Employee Details</h3>
+            <form id="editForm">
+                <input type="hidden" id="editUserId">
+                <div style="margin-bottom: 10px;">
+                    <label>Full Name</label>
+                    <input type="text" id="editFullName" required style="width: 100%;">
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label>Employee Code</label>
+                    <input type="text" id="editEmployeeCode" required style="width: 100%;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label>Department</label>
+                    <input type="text" id="editDepartment" required style="width: 100%;">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" style="flex: 1;">Save Changes</button>
+                    <button type="button" onclick="closeEditModal()" style="flex: 1; background-color: #7f8c8d;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

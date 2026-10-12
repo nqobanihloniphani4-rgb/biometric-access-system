@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance & Access Control Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Forced High-Contrast Overrides */
+        #auditSearchInput {
+            color: #000000 !important;
+            background-color: #ffffff !important;
+            font-size: 0.95em !important;
+            font-weight: 600 !important;
+            border: 1px solid #34495e !important;
+        }
+        #auditSearchInput::placeholder {
+            color: #666666 !important;
+        }
+        .main-table-head th {
+            background-color: #2c3e50 !important;
+            color: #ffffff !important;
+            font-weight: bold !important;
+            padding: 12px !important;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <h2>🛡️ Attendance & Access Control Dashboard</h2>
+        <div class="nav-links">
+            <a href="attendance-logs.html" class="active">Attendance Logs</a>
+            <a href="registered-users.html">Personnel Directory</a>
+            <a href="#" id="btnLogout" class="btn-logout" style="background-color: #e74c3c;">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- TOP CONTROLS: MONTH FILTER & AUDIT SEARCH -->
+        <div class="card" style="margin-bottom: 15px; padding: 15px;">
+            <div style="display: flex; gap: 15px; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                
+                <!-- Month Filter Dropdown -->
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <label style="font-weight: bold; color: #2c3e50;">📅 Filter Month:</label>
+                    <select id="monthFilterSelect" style="padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; font-weight: bold; color: #2c3e50; background-color: #ffffff;">
+                        <option value="ALL">Show All Months</option>
+                    </select>
+                </div>
+
+                <!-- Wage & Promotion Search Audit Bar -->
+                <div style="display: flex; gap: 8px; flex: 1; max-width: 450px;">
+                    <input type="text" id="auditSearchInput" placeholder="Search Code / ID for Wage or Promotion Audit...">
+                    <button id="btnRunAudit" style="background-color: #2980b9; color: #ffffff; border: none; padding: 10px 16px; border-radius: 4px; cursor: pointer; font-weight: bold;">Audit Profile</button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- MAIN ATTENDANCE TABLE CARD -->
+        <div class="card">
+            <h2>Live Attendance & Access Logs</h2>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                    <thead>
+                        <tr class="main-table-head">
+                            <th style="padding: 12px;">#</th>
+                            <th style="padding: 12px;">Employee</th>
+                            <th style="padding: 12px;">Entry Time</th>
+                            <th style="padding: 12px;">Exit Time</th>
+                            <th style="padding: 12px;">Silent Duress Time</th>
+                            <th style="padding: 12px;">Status</th>
+                            <th style="padding: 12px;">Department</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                        <!-- Rows dynamically populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- INDIVIDUAL EMPLOYEE AUDIT REPORT MODAL -->
+    <div id="auditModal" class="kiosk-popup" style="display: none;">
+        <div class="kiosk-popup-content" style="text-align: left; max-width: 650px; width: 92%; max-height: 85vh; overflow-y: auto; background-color: #ffffff; color: #2c3e50;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+                <h3 style="margin: 0; color: #2c3e50; font-size: 1.25em;">👤 Employee Attendance Audit Report</h3>
+                <button onclick="closeAuditModal()" style="background: none; border: none; font-size: 1.5em; cursor: pointer; color: #2c3e50;">&times;</button>
+            </div>
+
+            <!-- Profile Summary Box -->
+            <div id="auditProfileHeader" style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin-top: 15px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 0.95em; color: #2c3e50; border: 1px solid #e2e8f0;">
+                <!-- Dynamically filled -->
+            </div>
+
+            <!-- Stats Bar -->
+            <div id="auditStatsBar" style="display: flex; gap: 10px; margin-top: 15px;">
+                <!-- Dynamically filled -->
+            </div>
+
+            <h4 style="margin-top: 20px; color: #2c3e50; font-size: 1.05em; font-weight: bold;">Historical Attendance Records</h4>
+            <div style="max-height: 250px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 4px; margin-top: 8px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
+                    <thead>
+                        <tr style="background-color: #2c3e50 !important; color: #ffffff !important; text-align: left;">
+                            <th style="padding: 10px; color: #ffffff !important; background-color: #2c3e50 !important;">Date</th>
+                            <th style="padding: 10px; color: #ffffff !important; background-color: #2c3e50 !important;">Entry Time</th>
+                            <th style="padding: 10px; color: #ffffff !important; background-color: #2c3e50 !important;">Exit Time</th>
+                            <th style="padding: 10px; color: #ffffff !important; background-color: #2c3e50 !important;">Duress Event</th>
+                            <th style="padding: 10px; color: #ffffff !important; background-color: #2c3e50 !important;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditTableBody">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="margin-top: 20px; text-align: right;">
+                <button onclick="closeAuditModal()" style="background-color: #7f8c8d; color: #ffffff; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer; font-weight: bold;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('adminToken');
+        if (!token) window.location.href = 'admin-login.html';
+
+        document.getElementById('btnLogout').addEventListener('click', () => {
+            localStorage.removeItem('adminToken');
+            window.location.href = 'admin-login.html';
+        });
+
+        let allLogsData = [];
+
+        function renderGroupedLogs(logs, totalEmployees, selectedMonth = 'ALL') {
+            if (!Array.isArray(logs) || logs.length === 0) {
+                return '<tr><td colspan="7" style="text-align: center; padding: 20px;">No activity logged yet.</td></tr>';
+            }
+
+            const grouped = {};
+            const availableMonths = new Set();
+
+            logs.forEach(log => {
+                const dateObj = new Date(log.log_date);
+                const monthKey = dateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
+                availableMonths.add(monthKey);
+
+                if (selectedMonth !== 'ALL' && monthKey !== selectedMonth) return;
+
+                const dateKey = dateObj.toLocaleDateString(undefined, {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                if (!grouped[dateKey]) grouped[dateKey] = [];
+                grouped[dateKey].push(log);
+            });
+
+            const monthSelect = document.getElementById('monthFilterSelect');
+            if (monthSelect.options.length <= 1) {
+                availableMonths.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m;
+                    opt.innerText = m;
+                    monthSelect.appendChild(opt);
+                });
+            }
+
+            let html = '';
+            for (const [dateString, dayLogs] of Object.entries(grouped)) {
+                const presentCount = dayLogs.filter(l => l.entry_time || l.exit_time || l.duress_time).length;
+
+                html += `
+                    <tr class="date-header-row" style="background-color: #2c3e50 !important; color: #ffffff !important;">
+                        <td colspan="7" style="padding: 10px 12px; font-size: 1.05em; color: #ffffff !important;">
+                            📅 <strong>${dateString}</strong> &nbsp;—&nbsp; 
+                            <span style="font-weight: normal; font-size: 0.95em; color: #ecf0f1 !important;">
+                                <strong style="color: #2ecc71 !important;">${presentCount}</strong> out of <strong style="color: #2ecc71 !important;">${dayLogs.length}</strong> Personnel Present (${dayLogs.length - presentCount} Absent)
+                            </span>
+                        </td>
+                    </tr>
+                `;
+
+                dayLogs.forEach((row, index) => {
+                    const isPresent = !!(row.entry_time || row.exit_time);
+                    const isDuress = !!row.duress_time;
+
+                    let statusBadge = isPresent 
+                        ? `<span style="background: #d4edda; color: #155724; padding: 3px 8px; border-radius: 4px; font-weight: bold;">PRESENT</span>`
+                        : `<span style="background: #f8d7da; color: #721c24; padding: 3px 8px; border-radius: 4px; font-weight: bold;">ABSENT</span>`;
+
+                    if (isDuress) {
+                        statusBadge = `<span style="background: #fadbd8; color: #721c24; padding: 3px 8px; border-radius: 4px; font-weight: bold;">DURESS</span>`;
+                    }
+
+                    html += `
+                        <tr style="border-bottom: 1px solid #eee; background-color: ${isPresent ? '#ffffff' : '#fff8f8'}; color: #2c3e50;">
+                            <td style="padding: 12px;"><strong>#${index + 1}</strong></td>
+                            <td style="padding: 12px;"><strong>${row.full_name || 'Unknown'}</strong> (${row.employee_code || 'N/A'})</td>
+                            <td style="padding: 12px; color: ${row.entry_time ? '#27ae60' : '#888'}; font-weight: bold;">${row.entry_time || '--:--:--'}</td>
+                            <td style="padding: 12px; color: ${row.exit_time ? '#e67e22' : '#888'}; font-weight: bold;">${row.exit_time || '--:--:--'}</td>
+                            <td style="padding: 12px;">
+                                ${isDuress 
+                                    ? `<span style="color: #c0392b; font-weight: bold; background: #fadbd8; padding: 4px 8px; border-radius: 4px;">🚨 ${row.duress_time}</span>` 
+                                    : '--:--:--'}
+                            </td>
+                            <td style="padding: 12px;">${statusBadge}</td>
+                            <td style="padding: 12px;">${row.department || 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            return html || '<tr><td colspan="7" style="text-align: center; padding: 20px;">No records for selected month.</td></tr>';
+        }
+
+        async function fetchDashboard() {
+            try {
+                const logsRes = await fetch('/api/events/logs', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                allLogsData = await logsRes.json();
+                
+                const selectedMonth = document.getElementById('monthFilterSelect').value;
+                const tbody = document.getElementById('logsTableBody');
+                if (tbody) {
+                    tbody.innerHTML = renderGroupedLogs(allLogsData, 0, selectedMonth);
+                }
+            } catch (err) {
+                console.error('Error fetching dashboard:', err);
+            }
+        }
+
+        document.getElementById('monthFilterSelect').addEventListener('change', (e) => {
+            const tbody = document.getElementById('logsTableBody');
+            if (tbody) tbody.innerHTML = renderGroupedLogs(allLogsData, 0, e.target.value);
+        });
+
+        document.getElementById('btnRunAudit').addEventListener('click', runEmployeeAudit);
+        document.getElementById('auditSearchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') runEmployeeAudit();
+        });
+
+        async function runEmployeeAudit() {
+            const query = document.getElementById('auditSearchInput').value.trim();
+            if (!query) return alert('Please enter an Employee Code or ID Number');
+
+            try {
+                const res = await fetch(`/api/events/audit/${encodeURIComponent(query)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    return alert(err.error || 'Employee not found');
+                }
+
+                const data = await res.json();
+                displayAuditModal(data.user, data.history);
+            } catch (err) {
+                console.error('Audit Error:', err);
+                alert('Server error fetching audit profile');
+            }
+        }
+
+        function displayAuditModal(user, history) {
+            const profileHeader = document.getElementById('auditProfileHeader');
+            const statsBar = document.getElementById('auditStatsBar');
+            const tableBody = document.getElementById('auditTableBody');
+
+            profileHeader.innerHTML = `
+                <div><strong>Full Name:</strong> ${user.full_name}</div>
+                <div><strong>Employee Code:</strong> ${user.employee_code}</div>
+                <div><strong>ID Number:</strong> ${user.id_number || 'N/A'}</div>
+                <div><strong>Department:</strong> ${user.department}</div>
+                <div><strong>System Role:</strong> ${user.role}</div>
+                <div><strong>Enrolled Date:</strong> ${new Date(user.created_at).toISOString().split('T')[0]}</div>
+            `;
+
+            const totalDays = history.length;
+            const presentDays = history.filter(h => h.entry_time || h.exit_time).length;
+            const absentDays = totalDays - presentDays;
+
+            statsBar.innerHTML = `
+                <div style="flex:1; background:#d4edda; color:#155724; padding:10px; text-align:center; border-radius:4px; font-weight:bold;">
+                    Days Present: ${presentDays}
+                </div>
+                <div style="flex:1; background:#f8d7da; color:#721c24; padding:10px; text-align:center; border-radius:4px; font-weight:bold;">
+                    Days Absent: ${absentDays}
+                </div>
+                <div style="flex:1; background:#e2e3e5; color:#383d41; padding:10px; text-align:center; border-radius:4px; font-weight:bold;">
+                    Attendance Rate: ${totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0}%
+                </div>
+            `;
+
+            tableBody.innerHTML = history.map(h => {
+                const isPresent = !!(h.entry_time || h.exit_time);
+                return `
+                    <tr style="border-bottom: 1px solid #eee; color: #2c3e50;">
+                        <td style="padding: 8px;">${h.log_date}</td>
+                        <td style="padding: 8px; color: ${h.entry_time ? '#27ae60' : '#888'}; font-weight: bold;">${h.entry_time || '--:--:--'}</td>
+                        <td style="padding: 8px; color: ${h.exit_time ? '#e67e22' : '#888'}; font-weight: bold;">${h.exit_time || '--:--:--'}</td>
+                        <td style="padding: 8px;">${h.duress_time ? '🚨 Triggered' : 'None'}</td>
+                        <td style="padding: 8px; font-weight: bold; color: ${isPresent ? '#27ae60' : '#c0392b'};">${isPresent ? 'PRESENT' : 'ABSENT'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('auditModal').style.display = 'flex';
+        }
+
+        window.closeAuditModal = function() {
+            document.getElementById('auditModal').style.display = 'none';
+        };
+
+        fetchDashboard();
+        setInterval(fetchDashboard, 5000);
+    </script>
+</body>
+</html>
