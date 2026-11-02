@@ -24,6 +24,41 @@ app.use('/api/users', userRoutes);
 app.use('/api/access', accessRoutes);
 app.use('/api/events', accessRoutes);
 
+// --- REMOTE ESP32 HARDWARE ENROLLMENT QUEUE STATE ---
+let enrollmentQueue = {
+    enroll: false,
+    slot_id: null
+};
+
+// Admin endpoint triggered when clicking "Trigger ESP32 Enrollment" on dashboard
+app.post('/api/access/enroll/trigger', (req, res) => {
+    const { slot_id } = req.body;
+    if (!slot_id) {
+        return res.status(400).json({ error: "slot_id is required" });
+    }
+    enrollmentQueue = {
+        enroll: true,
+        slot_id: parseInt(slot_id, 10)
+    };
+    console.log(`[ENROLL QUEUE] Queued slot ID #${slot_id} for remote hardware enrollment.`);
+    res.json({ success: true, message: `Slot #${slot_id} queued for hardware enrollment.` });
+});
+
+// ESP32 polls this endpoint continuously
+app.get('/api/access/enroll/poll', (req, res) => {
+    res.json(enrollmentQueue);
+});
+
+// ESP32 posts back here when enrollment finishes to clear the queue
+app.post('/api/access/enroll/complete', (req, res) => {
+    console.log(`[ENROLL QUEUE] Hardware enrollment complete for slot #${req.body.slot_id}. Clearing queue.`);
+    enrollmentQueue = {
+        enroll: false,
+        slot_id: null
+    };
+    res.json({ success: true, message: "Queue cleared." });
+});
+
 // NEW: Handle user enrollment and fingerprint slot assignment (Fixes 404 Error)
 app.post('/api/enroll', async (req, res) => {
     try {
@@ -32,7 +67,7 @@ app.post('/api/enroll', async (req, res) => {
         console.log("Enrollment request received for:", full_name, "Slot:", fingerprint_slot);
 
         const queryText = `
-            INSERT INTO users (full_name, id_number, employee_code, contact_number, email_address, department, user_role, fingerprint_slot, created_at)
+            INSERT INTO users (full_name, id_number, employee_code, contact_number, email_address, department, user_role, fingerprint_slot_id, created_at)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
             RETURNING *;
         `;
