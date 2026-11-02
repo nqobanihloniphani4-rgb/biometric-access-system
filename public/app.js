@@ -1,4 +1,4 @@
-const API_URL = '/api';
+window.API_URL = window.API_URL || '/api';
 
 document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('adminToken');
@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSimDuress.addEventListener('click', () => handleKioskScan(true));
     }
 
-    async function handleKioskScan(isDuress) {
+async function handleKioskScan(isDuress) {
         const queryInput = document.getElementById('simUserQuery');
         const movementSelect = document.getElementById('simMovementType');
         const liveStatusBox = document.getElementById('liveStatusBox');
@@ -55,13 +55,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (res.ok && data.success) {
                 const displayType = isDuress ? 'DURESS_OPEN' : movement;
-                showKioskPopup(inputVal, displayType, data.message);
+                
+                // Extract name and code from backend response if available, fallback to inputVal
+                const userName = data.user && data.user.full_name ? data.user.full_name : `User / Slot: ${inputVal}`;
+                const userCode = data.user && data.user.employee_code ? `(${data.user.employee_code})` : '';
+
+                showKioskPopup(userName, userCode, displayType, data.message);
 
                 if (liveStatusBox) {
                     liveStatusBox.style.background = isDuress ? '#f8d7da' : (movement === 'EXIT' ? '#ffe8d6' : '#d4edda');
                     liveStatusBox.innerHTML = `
                         <p style="font-size: 1.1em; margin: 0; color: ${isDuress ? '#721c24' : (movement === 'EXIT' ? '#8a4b08' : '#155724')}">
-                            <strong>Status:</strong> ${data.message}
+                            <strong>Status:</strong> ${isDuress ? '🚨 Duress Alert' : (movement === 'EXIT' ? '🚪 Exit' : '✅ Verified')}: <strong>${userName}</strong> ${userCode}
                         </p>
                     `;
                 }
@@ -88,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function showKioskPopup(identifier, eventType, message) {
+    function showKioskPopup(nameText, codeText, eventType, message) {
         const overlay = document.getElementById('kioskOverlay');
         const title = document.getElementById('kioskTitle');
         const name = document.getElementById('kioskName');
@@ -107,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
             title.style.color = '#27ae60';
         }
 
-        name.innerText = `User / Slot: ${identifier}`;
+        name.innerText = `${nameText} ${codeText}`;
         dept.innerText = message;
 
         overlay.style.display = 'flex';
@@ -116,7 +121,76 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 5000);
     }
 
-    // 3. FETCH & RENDER PERSONNEL TABLE
+    // 3. ROLE SELECT TOGGLE FOR PASSWORD VISIBILITY
+    const roleSelect = document.getElementById('roleSelect');
+    const passwordGroup = document.getElementById('passwordGroup');
+    const adminPasswordInput = document.getElementById('adminPassword');
+
+    if (roleSelect && passwordGroup) {
+        roleSelect.addEventListener('change', function() {
+            if (this.value === 'ADMIN') {
+                passwordGroup.style.display = 'block';
+                if (adminPasswordInput) adminPasswordInput.required = true;
+            } else {
+                passwordGroup.style.display = 'none';
+                if (adminPasswordInput) {
+                    adminPasswordInput.required = false;
+                    adminPasswordInput.value = '';
+                }
+            }
+        });
+    }
+
+    // 4. HANDLE NEW PERSONNEL REGISTRATION & FINGERPRINT SLOT ENROLLMENT
+    const registerForm = document.getElementById('registerForm');
+    if (registerForm) {
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const token = localStorage.getItem('adminToken');
+
+const payload = {
+                full_name: document.getElementById('fullName').value.trim(),
+                id_number: document.getElementById('idNumber').value.trim(),
+                employee_code: document.getElementById('empCode').value.trim(),
+                contact_number: document.getElementById('contactNumber').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                department: document.getElementById('department').value.trim(),
+                fingerprint_slot_id: parseInt(document.getElementById('fingerprintSlotId').value),
+                duress_slot_id: null,
+                exit_slot_id: null
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/users`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    alert(`Personnel registered successfully! Initializing hardware enrollment for Slot #${payload.fingerprint_slot_id}.`);
+                    
+                    await triggerHardwareEnrollment(payload.fingerprint_slot_id);
+
+                    registerForm.reset();
+                    if (passwordGroup) passwordGroup.style.display = 'none';
+                    fetchUsers();
+                } else {
+                    alert(data.error || data.message || 'Failed to register personnel.');
+                }
+            } catch (err) {
+                console.error('Registration error:', err);
+                alert('Server connection failed during registration.');
+            }
+        });
+    }
+
+    // 5. FETCH & RENDER PERSONNEL TABLE
     async function fetchUsers() {
         const tbody = document.getElementById('usersTable');
         const countBadge = document.getElementById('totalPersonnelCount');
@@ -124,16 +198,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const res = await fetch(`${API_URL}/users`, {
+                method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            if (res.status === 401 || res.status === 403) {
-                localStorage.removeItem('adminToken');
-                window.location.href = 'admin-login.html';
-                return;
+            const responseText = await res.text();
+            
+            if (!res.ok) {
+                console.error(`Server Error [Status ${res.status}]:`, responseText);
+                throw new Error(`Server returned status ${res.status}`);
             }
 
-            const users = await res.json();
+            const users = JSON.parse(responseText);
 
             if (Array.isArray(users) && users.length > 0) {
                 if (countBadge) countBadge.innerText = users.length;
@@ -147,13 +223,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td style="padding: 12px;">${escapeHtml(user.contact_number || 'N/A')}</td>
                         <td style="padding: 12px;">${escapeHtml(user.email || 'N/A')}</td>
                         <td style="padding: 12px;">${escapeHtml(user.department)}</td>
+                        <td style="padding: 12px;"><span style="background: #e2e8f0; padding: 3px 8px; border-radius: 4px; font-weight: bold;">Slot #${user.fingerprint_slot_id || 'N/A'}</span></td>
                         <td style="padding: 12px;">${user.created_at ? new Date(user.created_at).toISOString().split('T')[0] : 'N/A'}</td>
                         <td style="padding: 12px;">
-                            <button class="btn-edit-user" 
+                        <button class="btn-edit-user" 
                                 data-id="${user.id}"
                                 data-name="${escapeHtml(user.full_name)}"
-                                data-idnumber="${escapeHtml(user.id_number || '')}"
-                                data-empcode="${escapeHtml(user.employee_code)}"
+                                data-id-number="${escapeHtml(user.id_number || '')}"
+                                data-emp-code="${escapeHtml(user.employee_code)}"
                                 data-contact="${escapeHtml(user.contact_number || '')}"
                                 data-email="${escapeHtml(user.email || '')}"
                                 data-dept="${escapeHtml(user.department)}"
@@ -167,11 +244,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 `).join('');
             } else {
                 if (countBadge) countBadge.innerText = '0';
-                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 20px;">No registered employees found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 20px;">No registered employees found.</td></tr>';
             }
         } catch (err) {
-            console.error('Error fetching users:', err);
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:red; padding: 20px;">Failed to load records.</td></tr>';
+            console.error('Fetch Users Error:', err);
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:red; padding: 20px;">Failed to load records. Check console for details.</td></tr>';
         }
     }
 
@@ -188,4 +265,284 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('usersTable')) {
         fetchUsers();
     }
+
+// 6. EDIT & DELETE EVENT DELEGATION (SAFE & BULLETPROOF)
+    const usersTableContainer = document.getElementById('usersTable');
+    if (usersTableContainer) {
+        usersTableContainer.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-edit-user');
+            if (btn) {
+                const setVal = (id, val) => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = val;
+                };
+
+                setVal('editUserId', btn.dataset.id || '');
+                setVal('editFullName', btn.dataset.name || '');
+                setVal('editIdNumber', btn.dataset.idNumber || '');
+                setVal('editEmployeeCode', btn.dataset.empCode || '');
+                setVal('editContactNumber', btn.dataset.contact || '');
+                setVal('editEmail', btn.dataset.email || '');
+                setVal('editDepartment', btn.dataset.dept || '');
+
+                const editModal = document.getElementById('editModal');
+                if (editModal) editModal.style.display = 'flex';
+            }
+
+            const deleteBtn = e.target.closest('.btn-delete-user');
+            if (deleteBtn) {
+                deleteUser(deleteBtn.dataset.id, deleteBtn.dataset.name);
+            }
+        });
+    }
+
+    const editForm = document.getElementById('editForm');
+    if (editForm) {
+        editForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userId = document.getElementById('editUserId').value;
+            const token = localStorage.getItem('adminToken');
+
+            const payload = {
+                full_name: document.getElementById('editFullName').value,
+                id_number: document.getElementById('editIdNumber').value,
+                employee_code: document.getElementById('editEmployeeCode').value,
+                contact_number: document.getElementById('editContactNumber').value,
+                email: document.getElementById('editEmail').value,
+                department: document.getElementById('editDepartment').value
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    closeEditModal();
+                    fetchUsers();
+                } else {
+                    alert(data.error || 'Failed to update user details.');
+                }
+            } catch (err) {
+                console.error('Update error:', err);
+                alert('Server connection failed.');
+            }
+        });
+    }
 });
+
+function closeEditModal() {
+    const editModal = document.getElementById('editModal');
+    if (editModal) editModal.style.display = 'none';
+}
+
+async function deleteUser(userId, userName) {
+    if (!confirm(`Are you sure you want to delete ${userName}?`)) return;
+
+    const token = localStorage.getItem('adminToken');
+    try {
+        const res = await fetch(`${API_URL}/users/${userId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+            window.location.reload();
+        } else {
+            const data = await res.json();
+            alert(data.error || 'Failed to delete user.');
+        }
+    } catch (err) {
+        console.error('Delete error:', err);
+        alert('Server connection failed.');
+    }
+}
+
+// Helper function to bridge the web dashboard and hardware enrollment endpoint
+async function triggerHardwareEnrollment(slotId) {
+    const token = localStorage.getItem('adminToken');
+    try {
+        const response = await fetch(`${API_URL}/access/enroll-slot`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ slot_id: slotId })
+        });
+        
+        const data = await response.json();
+        if (!response.ok) {
+            console.error('Hardware enrollment trigger failed:', data.error || data.message);
+        } else {
+            console.log('Hardware enrollment response:', data.message);
+        }
+    } catch (err) {
+        console.error('Could not reach server to trigger hardware enrollment:', err);
+    }
+}
+
+// 7. DOWNLOAD USERS CSV HANDLER
+async function downloadUsersCSV() {
+    try {
+        const token = localStorage.getItem('adminToken');
+        
+        const response = await fetch(`${API_URL}/users/export/csv`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to download users CSV.');
+        }
+
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = `registered_users_${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+        console.error('Download error:', error);
+        alert(error.message);
+    }
+}
+
+const registerFormElement = document.getElementById('registerForm');
+if (registerFormElement) {
+    registerFormElement.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      // 1. Gather form data matching your exact HTML input IDs
+      const formData = {
+        fullName: document.getElementById('fullName').value,
+        idNumber: document.getElementById('idNumber').value,
+        employeeCode: document.getElementById('empCode').value,
+        contact: document.getElementById('contactNumber').value,
+        email: document.getElementById('email').value,
+        department: document.getElementById('department').value,
+        role: document.getElementById('userRole') ? document.getElementById('userRole').value : 'employee', // Grabs 'admin' or 'employee' safely
+        fingerprintSlot: document.getElementById('fingerprintSlotId').value
+      };
+
+      try {
+        const response = await fetch('/api/enroll', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          // 2. Trigger the security popup if an administrator was registered
+          if (formData.role === 'admin' && result.generatedPassword) {
+            showSecurityPopup(formData.email, result.generatedPassword);
+          } else {
+            alert('Standard employee registered successfully!');
+          }
+          this.reset(); // Clear the form
+        } else {
+          alert('Error: ' + result.message);
+        }
+      } catch (err) {
+        console.error('Submission failed:', err);
+      }
+    });
+}
+
+// 3. Security Popup Function for Admins
+function showSecurityPopup(email, password) {
+  const modalHTML = `
+    <div id="adminCredModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:9999;">
+      <div style="background:white; padding:30px; border-radius:8px; width:400px; text-align:center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+        <h3 style="color:#d9534f; margin-top:0;">⚠️ Admin Security Credentials</h3>
+        <p>An administrator account has been successfully created.</p>
+        <div style="background:#f8f9fa; padding:12px; margin:15px 0; border:1px solid #ddd; text-align:left; font-family:monospace;">
+          <strong>Email:</strong> ${email}<br>
+          <strong>Password:</strong> <span style="color:#0275d8; font-weight:bold;">${password}</span>
+        </div>
+        <p style="font-size:12px; color:#666;">Copy this password now. It will not be shown again.</p>
+        <button onclick="document.getElementById('adminCredModal').remove()" style="padding:8px 20px; background:#0275d8; color:white; border:none; border-radius:4px; cursor:pointer;">Got it, Close</button>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// Function to show/hide the admin security block dynamically
+function toggleAdminSecurity(roleValue) {
+  const securitySection = document.getElementById('adminSecuritySection');
+  if (securitySection) {
+      if (roleValue === 'admin') {
+        securitySection.style.display = 'block'; // Show when Admin is selected
+      } else {
+        securitySection.style.display = 'none';  // Hide when Employee is selected
+        const adminPassInput = document.getElementById('adminPasswordInput');
+        if (adminPassInput) adminPassInput.value = ''; // Clear input if switched back
+      }
+  }
+}
+
+// Listen for changes on the User Role dropdown
+const userRoleSelect = document.getElementById('userRole');
+if (userRoleSelect) {
+    userRoleSelect.addEventListener('change', function() {
+        const securitySection = document.getElementById('adminSecuritySection');
+        if (securitySection) {
+            if (this.value === 'admin') {
+                securitySection.style.display = 'block'; // Show security box
+            } else {
+                securitySection.style.display = 'none';  // Hide security box
+            }
+        }
+    });
+}
+
+// 8. DOWNLOAD DAILY ATTENDANCE PDF HANDLER
+async function downloadDailyAttendancePDF() {
+    try {
+        const token = localStorage.getItem('adminToken');
+        
+        const dateInput = document.getElementById('attendanceDate');
+        const selectedDate = (dateInput && dateInput.value) 
+            ? dateInput.value 
+            : new Date().toISOString().slice(0, 10);
+
+        const response = await fetch(`${API_URL}/events/export/pdf?date=${selectedDate}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.error || errData.message || 'Failed to generate attendance PDF.');
+        }
+
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = `attendance_log_${selectedDate}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+        console.error('PDF Download Error:', error);
+        alert(`Download Error: ${error.message}`);
+    }
+}
