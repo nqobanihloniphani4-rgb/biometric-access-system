@@ -24,6 +24,47 @@ app.use('/api/users', userRoutes);
 app.use('/api/access', accessRoutes);
 app.use('/api/events', accessRoutes);
 
+// NEW: Handle user enrollment and fingerprint slot assignment (Fixes 404 Error)
+app.post('/api/enroll', async (req, res) => {
+    try {
+        const { full_name, id_number, employee_code, contact_number, email_address, department, user_role, fingerprint_slot } = req.body;
+        
+        console.log("Enrollment request received for:", full_name, "Slot:", fingerprint_slot);
+
+        const queryText = `
+            INSERT INTO users (full_name, id_number, employee_code, contact_number, email_address, department, user_role, fingerprint_slot, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+            RETURNING *;
+        `;
+        
+        let result;
+        try {
+            result = await db.query(queryText, [
+                full_name || 'Unknown', 
+                id_number || '', 
+                employee_code || '', 
+                contact_number || '', 
+                email_address || '', 
+                department || 'ICT', 
+                user_role || 'Standard Employee', 
+                fingerprint_slot || null
+            ]);
+        } catch (dbErr) {
+            console.error("Database insert error during enrollment:", dbErr.message);
+            return res.status(500).json({ error: `Database error during enrollment: ${dbErr.message}` });
+        }
+
+        res.status(201).json({
+            success: true,
+            message: "User enrolled successfully",
+            user: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Enrollment Error:', err.message);
+        res.status(500).json({ error: `Failed to enroll user: ${err.message}` });
+    }
+});
+
 // NEW: PDF Attendance Export Route (Paired Entry & Exit on a single line)
 app.get('/api/events/export/pdf', async (req, res) => {
     try {
@@ -97,7 +138,6 @@ app.get('/api/events/export/pdf', async (req, res) => {
             }
 
             if (eventType.includes('ENTRY')) {
-                // If there's already an open entry without an exit, push it first
                 if (activeEntries[userId]) {
                     sessions.push(activeEntries[userId]);
                 }
@@ -114,7 +154,6 @@ app.get('/api/events/export/pdf', async (req, res) => {
                     sessions.push(activeEntries[userId]);
                     delete activeEntries[userId];
                 } else {
-                    // Exit without a recorded entry in this view
                     sessions.push({
                         full_name: row.full_name || 'Unknown',
                         employee_code: row.employee_code || 'N/A',
@@ -126,14 +165,12 @@ app.get('/api/events/export/pdf', async (req, res) => {
             }
         });
 
-        // Push any remaining unpaired entries
         Object.values(activeEntries).forEach(session => {
             sessions.push(session);
         });
 
         console.log("Processed attendance sessions for PDF:", sessions.length);
 
-        // Set response headers for direct file stream download
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=attendance_${targetDate}.pdf`);
 
@@ -141,7 +178,6 @@ app.get('/api/events/export/pdf', async (req, res) => {
         const doc = new PDFDocument({ margin: 30 });
         doc.pipe(res);
 
-        // Title and Header info
         doc.fontSize(18).text(`Daily Attendance Report - ${targetDate}`, { align: 'center' });
         doc.moveDown();
 
