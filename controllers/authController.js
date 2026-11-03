@@ -1,9 +1,8 @@
-const pool = require('../config/db');
+const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
-const db = require('../config/db'); // Adjust the relative path if needed based on your folder structure
 
 // Configure Nodemailer transporter (using Gmail / SMTP)
 const transporter = nodemailer.createTransport({
