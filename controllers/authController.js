@@ -49,10 +49,10 @@ exports.login = async (req, res) => {
 // Seed initial admin user if none exists
 exports.seedAdmin = async () => {
   try {
-    const check = await pool.query('SELECT * FROM admin_users WHERE username = $1', ['admin']);
+    const check = await db.query('SELECT * FROM admin_users WHERE username = $1', ['admin']);
     if (check.rows.length === 0) {
       const hashedPassword = await bcrypt.hash('admin123', 10);
-      await pool.query(
+      await db.query(
         'INSERT INTO admin_users (username, password_hash, role) VALUES ($1, $2, $3)',
         ['admin', hashedPassword, 'ADMIN']
       );
