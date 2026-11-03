@@ -15,10 +15,10 @@ const transporter = nodemailer.createTransport({
 
 // Admin Login
 exports.login = async (req, res) => {
-  const { username, password } = req.body; // Note: 'username' here holds the email entered in the login form
+  const { username, password } = req.body;
   try {
-    // Query the main 'users' table instead of 'admin_users'
-    const result = await pool.query('SELECT * FROM users WHERE email = $1 AND role = $2', [username, 'ADMIN']);
+    // Query the 'admin_users' table instead of 'users'
+    const result = await db.query('SELECT * FROM admin_users WHERE username = $1', [username]);
     if (result.rows.length === 0) {
       return res.status(401).json({ success: false, error: 'Invalid username or password' });
     }
@@ -36,16 +36,17 @@ exports.login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: admin.id, username: admin.email, role: admin.role },
+      { id: admin.id, username: admin.username, role: admin.role },
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
     );
 
-    res.json({ success: true, token, role: admin.role, username: admin.email });
+    res.json({ success: true, token, role: admin.role, username: admin.username });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
 // Seed initial admin user if none exists
 exports.seedAdmin = async () => {
   try {
@@ -63,13 +64,12 @@ exports.seedAdmin = async () => {
   }
 };
 
-// 1. Request Password Reset (Sends Email with Token Link)
 // 1. Request Password Reset (Sends Email with Dynamic Link)
 exports.forgotPassword = async (req, res) => {
   const { username } = req.body;
 
   try {
-    const result = await pool.query('SELECT * FROM admin_users WHERE username = $1', [username]);
+    const result = await db.query('SELECT * FROM admin_users WHERE username = $1', [username]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Admin user not found' });
     }
@@ -79,12 +79,12 @@ exports.forgotPassword = async (req, res) => {
     const tokenExpires = new Date(Date.now() + 3600000);
 
     // Save token and expiry to database
-    await pool.query(
+    await db.query(
       'UPDATE admin_users SET reset_token = $1, reset_token_expires = $2 WHERE username = $3',
       [resetToken, tokenExpires, username]
     );
 
-    // Dynamically detect if running locally or on Render (e.g., your-app.onrender.com)
+    // Dynamically detect if running locally or on Render
     const protocol = req.protocol;
     const host = req.get('host');
     const resetUrl = `${protocol}://${host}/reset-password.html?token=${resetToken}`;
@@ -118,7 +118,7 @@ exports.resetPassword = async (req, res) => {
 
   try {
     // Find admin with valid unexpired token
-    const userRes = await pool.query(
+    const userRes = await db.query(
       'SELECT * FROM admin_users WHERE reset_token = $1 AND reset_token_expires > NOW()',
       [token]
     );
@@ -131,7 +131,7 @@ exports.resetPassword = async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // Update password and clear token fields
-    await pool.query(
+    await db.query(
       'UPDATE admin_users SET password_hash = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2',
       [hashedPassword, admin.id]
     );
@@ -141,4 +141,3 @@ exports.resetPassword = async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 };
-
