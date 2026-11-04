@@ -219,7 +219,7 @@ document.getElementById('btnRemoteEnroll').addEventListener('click', async () =>
 
     try {
         const token = localStorage.getItem('adminToken');
-        const res = await fetch('/api/access/enroll-slot', {
+        const res = await fetch('/api/access/enroll/trigger', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
