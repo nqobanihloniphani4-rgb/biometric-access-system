@@ -1,7 +1,6 @@
 const pool = require('../config/db');
 let pendingEnrollmentSlot = null;
 const { Parser } = require('json2csv');
-const nodemailer = require('nodemailer');
 const bcrypt = require('bcrypt');
 
 const { Resend } = require('resend');
