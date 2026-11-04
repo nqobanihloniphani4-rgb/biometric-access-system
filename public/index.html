@@ -52,11 +52,11 @@
             <div style="overflow-x: auto;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
                     <thead>
-                        <tr style="background: rgba(0, 0, 0, 0.2); color: white;">
-                            <th style="padding: 10px; text-align: left;">Timestamp</th>
-                            <th style="padding: 10px; text-align: left;">User / Code</th>
-                            <th style="padding: 10px; text-align: left;">Slot ID</th>
-                            <th style="padding: 10px; text-align: left;">Status</th>
+                        <tr style="background: rgba(0, 0, 0, 0.4); color: white; border-bottom: 2px solid rgba(255, 255, 255, 0.2);">
+                            <th style="padding: 10px; text-align: left; color: #ffffff;">Timestamp</th>
+                            <th style="padding: 10px; text-align: left; color: #ffffff;">User / Code</th>
+                            <th style="padding: 10px; text-align: left; color: #ffffff;">Slot ID</th>
+                            <th style="padding: 10px; text-align: left; color: #ffffff;">Status</th>
                         </tr>
                     </thead>
                     <tbody id="recentActivityTable">
@@ -92,12 +92,10 @@
                 const statusText = document.getElementById('statusText');
                 
                 if (statusText) {
-                    // Compare milliseconds directly
                     const logTime = Number(latest.timestamp_ms);
                     const currentTime = Date.now();
                     const ageInSeconds = (currentTime - logTime) / 1000;
 
-                    // Display if scanned within the last 5 seconds
                     if (ageInSeconds >= 0 && ageInSeconds <= 5) {
                         if (latest.event_type === 'DURESS_OPEN') {
                             statusText.innerHTML = `<span style="color: #c0392b;">🚨 DURESS ALERT:<br>${latest.full_name} (${latest.employee_code})</span>`;
@@ -127,7 +125,7 @@
             const tbody = document.getElementById('recentActivityTable');
             if (!tbody) return;
 
-            const recentLogs = logs.slice(0, 5); // Take last 5 entries
+            const recentLogs = logs.slice(0, 5);
 
             if (recentLogs.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="4" style="padding: 15px; text-align: center; opacity: 0.9;">No recent activity recorded yet.</td></tr>`;
@@ -138,6 +136,8 @@
                 const timeStr = log.timestamp_ms ? new Date(Number(log.timestamp_ms)).toLocaleTimeString() : 'N/A';
                 const eventType = log.event_type || 'ACCESS';
                 
+                const slotId = log.slot_id || log.fingerprint_slot_id || log.assigned_slot || log.user_slot || 'N/A';
+
                 let badgeBg = '#27ae60';
                 let statusText = 'Granted';
                 if (eventType === 'DURESS_OPEN') {
@@ -153,9 +153,9 @@
 
                 return `
                     <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-                        <td style="padding: 10px;">${timeStr}</td>
-                        <td style="padding: 10px;">${log.full_name || log.employee_code || 'Unknown'}</td>
-                        <td style="padding: 10px;">Slot #${log.slot_id || log.fingerprint_slot_id || 'N/A'}</td>
+                        <td style="padding: 10px; color: #ffffff;">${timeStr}</td>
+                        <td style="padding: 10px; color: #ffffff;">${log.full_name || log.employee_code || 'Unknown'}</td>
+                        <td style="padding: 10px; color: #ffffff;">Slot #${slotId}</td>
                         <td style="padding: 10px;">
                             <span style="background: ${badgeBg}; color: white; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85em;">
                                 ${statusText}
