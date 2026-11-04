@@ -46,6 +46,28 @@
             </div>
         </div>
 
+        <!-- RECENT TERMINAL ACTIVITY FEED -->
+        <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); padding: 25px; border-radius: 12px; margin-top: 30px; color: white; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h3 style="margin-top: 0; font-size: 1.2em; color: #ffffff; margin-bottom: 15px;">📋 Recent Terminal Activity</h3>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
+                    <thead>
+                        <tr style="background: rgba(0, 0, 0, 0.2); color: white;">
+                            <th style="padding: 10px; text-align: left;">Timestamp</th>
+                            <th style="padding: 10px; text-align: left;">User / Code</th>
+                            <th style="padding: 10px; text-align: left;">Slot ID</th>
+                            <th style="padding: 10px; text-align: left;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentActivityTable">
+                        <tr>
+                            <td colspan="4" style="padding: 15px; text-align: center; opacity: 0.9;">Loading recent entries...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 
     <!-- 5-SECOND INDIVIDUAL VERIFICATION POPUP -->
@@ -96,7 +118,60 @@
         }
     }
 
+    async function loadRecentTerminalActivity() {
+        try {
+            const response = await fetch('/api/events/latest');
+            if (!response.ok) return;
+            const logs = await response.json();
+            
+            const tbody = document.getElementById('recentActivityTable');
+            if (!tbody) return;
+
+            const recentLogs = logs.slice(0, 5); // Take last 5 entries
+
+            if (recentLogs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="padding: 15px; text-align: center; opacity: 0.9;">No recent activity recorded yet.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = recentLogs.map(log => {
+                const timeStr = log.timestamp_ms ? new Date(Number(log.timestamp_ms)).toLocaleTimeString() : 'N/A';
+                const eventType = log.event_type || 'ACCESS';
+                
+                let badgeBg = '#27ae60';
+                let statusText = 'Granted';
+                if (eventType === 'DURESS_OPEN') {
+                    badgeBg = '#c0392b';
+                    statusText = 'Duress';
+                } else if (eventType === 'EXIT') {
+                    badgeBg = '#e67e22';
+                    statusText = 'Exit';
+                } else if (eventType.includes('DENIED')) {
+                    badgeBg = '#e74c3c';
+                    statusText = 'Denied';
+                }
+
+                return `
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                        <td style="padding: 10px;">${timeStr}</td>
+                        <td style="padding: 10px;">${log.full_name || log.employee_code || 'Unknown'}</td>
+                        <td style="padding: 10px;">Slot #${log.slot_id || log.fingerprint_slot_id || 'N/A'}</td>
+                        <td style="padding: 10px;">
+                            <span style="background: ${badgeBg}; color: white; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85em;">
+                                ${statusText}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (err) {
+            console.error('Failed to load recent activity feed:', err);
+        }
+    }
+
     setInterval(pollLatestLogs, 2000);
+    setInterval(loadRecentTerminalActivity, 3000);
+    loadRecentTerminalActivity();
 </script>
 </body>
 </html>
