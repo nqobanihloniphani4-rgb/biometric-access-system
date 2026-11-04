@@ -70,12 +70,11 @@
                             <th>Timestamp</th>
                             <th>User / Code</th>
                             <th>Slot ID</th>
-                            <th>Status</th>
                         </tr>
                     </thead>
                     <tbody id="recentActivityTable">
                         <tr>
-                            <td colspan="4" style="text-align: center; opacity: 0.9;">Loading recent entries...</td>
+                            <td colspan="3" style="text-align: center; opacity: 0.9;">Loading recent entries...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -142,41 +141,22 @@
             const recentLogs = logs.slice(0, 5);
 
             if (recentLogs.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; opacity: 0.9;">No recent activity recorded yet.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; opacity: 0.9;">No recent activity recorded yet.</td></tr>`;
                 return;
             }
 
             tbody.innerHTML = recentLogs.map(log => {
                 const timeSource = log.timestamp_ms || log.timestamp;
                 const timeStr = timeSource ? new Date(Number(timeSource) || timeSource).toLocaleTimeString() : 'N/A';
-                const eventType = log.event_type || log.status || 'ACCESS';
                 
                 const slotId = log.slot_id || log.fingerprint_slot_id || 'N/A';
                 const slotDisplay = slotId !== 'N/A' ? `#${slotId}` : 'N/A';
-
-                let badgeBg = '#27ae60';
-                let statusText = 'Granted';
-                if (eventType === 'DURESS_OPEN') {
-                    badgeBg = '#c0392b';
-                    statusText = 'Duress';
-                } else if (eventType === 'EXIT') {
-                    badgeBg = '#e67e22';
-                    statusText = 'Exit';
-                } else if (eventType.includes('DENIED')) {
-                    badgeBg = '#e74c3c';
-                    statusText = 'Denied';
-                }
 
                 return `
                     <tr>
                         <td>${timeStr}</td>
                         <td>${log.full_name || log.employee_code || 'Unknown'}</td>
                         <td>Slot ${slotDisplay}</td>
-                        <td>
-                            <span style="background: ${badgeBg}; color: white; padding: 4px 10px; border-radius: 4px; font-weight: bold; font-size: 0.85em;">
-                                ${statusText}
-                            </span>
-                        </td>
                     </tr>
                 `;
             }).join('');
@@ -185,7 +165,6 @@
         }
     }
 
-    
     setInterval(pollLatestLogs, 2000);
     setInterval(loadRecentTerminalActivity, 3000);
     loadRecentTerminalActivity();
