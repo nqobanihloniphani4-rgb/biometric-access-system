@@ -148,7 +148,7 @@ async function handleKioskScan(isDuress) {
             e.preventDefault();
             const token = localStorage.getItem('adminToken');
 
-const payload = {
+            const payload = {
                 full_name: document.getElementById('fullName').value.trim(),
                 id_number: document.getElementById('idNumber').value.trim(),
                 employee_code: document.getElementById('empCode').value.trim(),
@@ -417,97 +417,6 @@ async function downloadUsersCSV() {
         console.error('Download error:', error);
         alert(error.message);
     }
-}
-
-const registerFormElement = document.getElementById('registerForm');
-if (registerFormElement) {
-    registerFormElement.addEventListener('submit', async function(e) {
-      e.preventDefault();
-
-      // 1. Gather form data matching your exact HTML input IDs
-      const formData = {
-        fullName: document.getElementById('fullName').value,
-        idNumber: document.getElementById('idNumber').value,
-        employeeCode: document.getElementById('empCode').value,
-        contact: document.getElementById('contactNumber').value,
-        email: document.getElementById('email').value,
-        department: document.getElementById('department').value,
-        role: document.getElementById('userRole') ? document.getElementById('userRole').value : 'employee', // Grabs 'admin' or 'employee' safely
-        fingerprintSlot: document.getElementById('fingerprintSlotId').value
-      };
-
-      try {
-        const response = await fetch('/api/enroll', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          // 2. Trigger the security popup if an administrator was registered
-          if (formData.role === 'admin' && result.generatedPassword) {
-            showSecurityPopup(formData.email, result.generatedPassword);
-          } else {
-            alert('Standard employee registered successfully!');
-          }
-          this.reset(); // Clear the form
-        } else {
-          alert('Error: ' + result.message);
-        }
-      } catch (err) {
-        console.error('Submission failed:', err);
-      }
-    });
-}
-
-// 3. Security Popup Function for Admins
-function showSecurityPopup(email, password) {
-  const modalHTML = `
-    <div id="adminCredModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center; z-index:9999;">
-      <div style="background:white; padding:30px; border-radius:8px; width:400px; text-align:center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-        <h3 style="color:#d9534f; margin-top:0;">⚠️ Admin Security Credentials</h3>
-        <p>An administrator account has been successfully created.</p>
-        <div style="background:#f8f9fa; padding:12px; margin:15px 0; border:1px solid #ddd; text-align:left; font-family:monospace;">
-          <strong>Email:</strong> ${email}<br>
-          <strong>Password:</strong> <span style="color:#0275d8; font-weight:bold;">${password}</span>
-        </div>
-        <p style="font-size:12px; color:#666;">Copy this password now. It will not be shown again.</p>
-        <button onclick="document.getElementById('adminCredModal').remove()" style="padding:8px 20px; background:#0275d8; color:white; border:none; border-radius:4px; cursor:pointer;">Got it, Close</button>
-      </div>
-    </div>
-  `;
-  document.body.insertAdjacentHTML('beforeend', modalHTML);
-}
-
-// Function to show/hide the admin security block dynamically
-function toggleAdminSecurity(roleValue) {
-  const securitySection = document.getElementById('adminSecuritySection');
-  if (securitySection) {
-      if (roleValue === 'admin') {
-        securitySection.style.display = 'block'; // Show when Admin is selected
-      } else {
-        securitySection.style.display = 'none';  // Hide when Employee is selected
-        const adminPassInput = document.getElementById('adminPasswordInput');
-        if (adminPassInput) adminPassInput.value = ''; // Clear input if switched back
-      }
-  }
-}
-
-// Listen for changes on the User Role dropdown
-const userRoleSelect = document.getElementById('userRole');
-if (userRoleSelect) {
-    userRoleSelect.addEventListener('change', function() {
-        const securitySection = document.getElementById('adminSecuritySection');
-        if (securitySection) {
-            if (this.value === 'admin') {
-                securitySection.style.display = 'block'; // Show security box
-            } else {
-                securitySection.style.display = 'none';  // Hide security box
-            }
-        }
-    });
 }
 
 // 8. DOWNLOAD DAILY ATTENDANCE PDF HANDLER
