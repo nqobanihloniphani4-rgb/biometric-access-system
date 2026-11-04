@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const userRoutes = require('./routes/userRoutes');
@@ -121,9 +122,9 @@ app.post('/api/events/access-denied', async (req, res) => {
 // NEW: Handle user enrollment and fingerprint slot assignment (Fixes 404 Error)
 app.post('/api/enroll', async (req, res) => {
     try {
-        const { full_name, id_number, employee_code, contact_number, email_address, department, user_role, fingerprint_slot } = req.body;
+        const { full_name, id_number, employee_code, contact_number, email_address, department, user_role, fingerprint_slot, admin_password } = req.body;
         
-        console.log("Enrollment request received for:", full_name, "Slot:", fingerprint_slot);
+        console.log("Enrollment request received for:", full_name, "Slot:", fingerprint_slot, "Role:", user_role);
 
         const queryText = `
             INSERT INTO users (full_name, id_number, employee_code, contact_number, email_address, department, user_role, fingerprint_slot_id, created_at)
@@ -143,6 +144,24 @@ app.post('/api/enroll', async (req, res) => {
                 user_role || 'Standard Employee', 
                 fingerprint_slot || null
             ]);
+
+            // Automatically sync admin credentials if registered as an admin
+            const roleLower = (user_role || '').toLowerCase();
+            if (roleLower === 'admin' || roleLower === 'administrator') {
+                const adminUsername = email_address || employee_code;
+                const rawPassword = admin_password || 'Admin@123';
+                const hashedPassword = await bcrypt.hash(rawPassword, 10);
+
+                await db.query(
+                    `INSERT INTO admin_users (username, password_hash, role) 
+                     VALUES ($1, $2, $3)
+                     ON CONFLICT (username) 
+                     DO UPDATE SET password_hash = $2, role = $3`,
+                    [adminUsername, hashedPassword, 'ADMIN']
+                );
+                console.log(`[ADMIN SYNC] Created/Updated admin login for: ${adminUsername}`);
+            }
+
         } catch (dbErr) {
             console.error("Database insert error during enrollment:", dbErr.message);
             return res.status(500).json({ error: `Database error during enrollment: ${dbErr.message}` });
