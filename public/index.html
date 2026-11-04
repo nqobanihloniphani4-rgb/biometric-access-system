@@ -81,6 +81,8 @@
                             statusText.innerHTML = `<span style="color: #c0392b;">🚨 DURESS ALERT:<br>${latest.full_name} (${latest.employee_code})</span>`;
                         } else if (latest.event_type === 'EXIT') {
                             statusText.innerHTML = `<span style="color: #e67e22;">🚪 Exit Logged:<br>${latest.full_name} (${latest.employee_code})</span>`;
+                        } else if (latest.event_type === 'DENIED_UNKNOWN' || latest.event_type === 'DENIED') {
+                            statusText.innerHTML = `<span style="color: #e74c3c;">❌ ACCESS DENIED:<br>Unknown Fingerprint Scanned</span>`;
                         } else {
                             statusText.innerHTML = `<span style="color: #27ae60;">✅ Access Granted:<br>${latest.full_name} (${latest.employee_code})</span>`;
                         }
