@@ -121,25 +121,26 @@ async function handleKioskScan(isDuress) {
         }, 5000);
     }
 
-    // 3. ROLE SELECT TOGGLE FOR PASSWORD VISIBILITY
-    const roleSelect = document.getElementById('roleSelect');
-    const passwordGroup = document.getElementById('passwordGroup');
-    const adminPasswordInput = document.getElementById('adminPassword');
+// 3. ROLE SELECT TOGGLE FOR PASSWORD VISIBILITY
+const roleSelect = document.getElementById('roleSelect');
+const adminSecuritySection = document.getElementById('adminSecuritySection'); // Matches HTML ID
+const adminPasswordInput = document.getElementById('adminPasswordInput');     // Matches HTML ID
 
-    if (roleSelect && passwordGroup) {
-        roleSelect.addEventListener('change', function() {
-            if (this.value === 'ADMIN') {
-                passwordGroup.style.display = 'block';
-                if (adminPasswordInput) adminPasswordInput.required = true;
-            } else {
-                passwordGroup.style.display = 'none';
-                if (adminPasswordInput) {
-                    adminPasswordInput.required = false;
-                    adminPasswordInput.value = '';
-                }
+if (roleSelect && adminSecuritySection) {
+    roleSelect.addEventListener('change', function() {
+        // Check for both 'ADMIN' and 'Administrator' depending on your option value
+        if (this.value === 'ADMIN' || this.value === 'Administrator') {
+            adminSecuritySection.style.display = 'block';
+            if (adminPasswordInput) adminPasswordInput.required = true;
+        } else {
+            adminSecuritySection.style.display = 'none';
+            if (adminPasswordInput) {
+                adminPasswordInput.required = false;
+                adminPasswordInput.value = '';
             }
-        });
-    }
+        }
+    });
+}
 
     // 4. HANDLE NEW PERSONNEL REGISTRATION & FINGERPRINT SLOT ENROLLMENT
     const registerForm = document.getElementById('registerForm');
