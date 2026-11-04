@@ -96,7 +96,7 @@
         </div>
     </div>
 
-    <script src="app.js"></script>
+<script src="app.js"></script>
 <script>
     async function pollLatestLogs() {
         try {
@@ -134,7 +134,7 @@
 
     async function loadRecentTerminalActivity() {
         try {
-            // Fetch both logs and users directory in parallel so we can map slot IDs accurately
+            // Fetch both logs and users directory simultaneously
             const [logsRes, usersRes] = await Promise.all([
                 fetch('/api/events/latest'),
                 fetch('/api/users').catch(() => ({ ok: false }))
@@ -143,12 +143,16 @@
             if (!logsRes.ok) return;
             const logs = await logsRes.json();
             
-            let userSlotMap = {};
+            // Build a lookup map for slots by name and employee code
+            let slotMap = {};
             if (usersRes.ok) {
                 const users = await usersRes.json();
                 users.forEach(u => {
-                    if (u.full_name) userSlotMap[u.full_name.toLowerCase().trim()] = u.fingerprint_slot_id;
-                    if (u.employee_code) userSlotMap[u.employee_code.toLowerCase().trim()] = u.fingerprint_slot_id;
+                    const slot = u.fingerprint_slot_id || u.slot_id;
+                    if (slot) {
+                        if (u.full_name) slotMap[u.full_name.toLowerCase().trim()] = slot;
+                        if (u.employee_code) slotMap[u.employee_code.toLowerCase().trim()] = slot;
+                    }
                 });
             }
 
@@ -166,14 +170,12 @@
                 const timeStr = log.timestamp_ms ? new Date(Number(log.timestamp_ms)).toLocaleTimeString() : 'N/A';
                 const eventType = log.event_type || 'ACCESS';
                 
-                // Resolve slot ID from event log or lookup map
-                const lookupKeyName = log.full_name ? log.full_name.toLowerCase().trim() : '';
-                const lookupKeyEmp = log.employee_code ? log.employee_code.toLowerCase().trim() : '';
-                
-                const resolvedSlot = log.slot_id || log.fingerprint_slot_id || log.assigned_slot || 
-                                     userSlotMap[lookupKeyName] || userSlotMap[lookupKeyEmp] || 'N/A';
+                const nameKey = log.full_name ? log.full_name.toLowerCase().trim() : '';
+                const codeKey = log.employee_code ? log.employee_code.toLowerCase().trim() : '';
 
-                const slotDisplay = resolvedSlot !== 'N/A' ? `#${resolvedSlot}` : 'N/A';
+                // Try to get slot from log directly, then fallback to user profile lookup map
+                const slotId = log.fingerprint_slot_id || log.slot_id || slotMap[nameKey] || slotMap[codeKey] || 'N/A';
+                const slotDisplay = slotId !== 'N/A' ? `#${slotId}` : 'N/A';
 
                 let badgeBg = '#27ae60';
                 let statusText = 'Granted';
