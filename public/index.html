@@ -5,6 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Biometric Door Terminal Kiosk</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Hard-override any external CSS hiding table header backgrounds */
+        .recent-table th {
+            background-color: #0f172a !important;
+            color: #ffffff !important;
+            padding: 14px 12px !important;
+            text-align: left !important;
+            font-weight: bold !important;
+            border-bottom: 2px solid #38bdf8 !important;
+        }
+        .recent-table td {
+            padding: 12px !important;
+            color: #ffffff !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+    </style>
 </head>
 <body style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%); min-height: 100vh;">
     <nav class="navbar">
@@ -50,18 +66,18 @@
         <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); padding: 25px; border-radius: 12px; margin-top: 30px; color: white; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
             <h3 style="margin-top: 0; font-size: 1.2em; color: #ffffff; margin-bottom: 15px;">📋 Recent Terminal Activity</h3>
             <div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
+                <table class="recent-table" style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
                     <thead>
-                        <tr style="background: #0f172a !important; color: #ffffff !important; border-bottom: 2px solid #38bdf8;">
-                            <th style="padding: 12px; text-align: left; color: #ffffff !important; font-weight: bold;">Timestamp</th>
-                            <th style="padding: 12px; text-align: left; color: #ffffff !important; font-weight: bold;">User / Code</th>
-                            <th style="padding: 12px; text-align: left; color: #ffffff !important; font-weight: bold;">Slot ID</th>
-                            <th style="padding: 12px; text-align: left; color: #ffffff !important; font-weight: bold;">Status</th>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>User / Code</th>
+                            <th>Slot ID</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
                     <tbody id="recentActivityTable">
                         <tr>
-                            <td colspan="4" style="padding: 15px; text-align: center; opacity: 0.9;">Loading recent entries...</td>
+                            <td colspan="4" style="text-align: center; opacity: 0.9;">Loading recent entries...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -118,17 +134,31 @@
 
     async function loadRecentTerminalActivity() {
         try {
-            const response = await fetch('/api/events/latest');
-            if (!response.ok) return;
-            const logs = await response.json();
+            // Fetch both logs and users directory in parallel so we can map slot IDs accurately
+            const [logsRes, usersRes] = await Promise.all([
+                fetch('/api/events/latest'),
+                fetch('/api/users').catch(() => ({ ok: false }))
+            ]);
+
+            if (!logsRes.ok) return;
+            const logs = await logsRes.json();
             
+            let userSlotMap = {};
+            if (usersRes.ok) {
+                const users = await usersRes.json();
+                users.forEach(u => {
+                    if (u.full_name) userSlotMap[u.full_name.toLowerCase().trim()] = u.fingerprint_slot_id;
+                    if (u.employee_code) userSlotMap[u.employee_code.toLowerCase().trim()] = u.fingerprint_slot_id;
+                });
+            }
+
             const tbody = document.getElementById('recentActivityTable');
             if (!tbody) return;
 
             const recentLogs = logs.slice(0, 5);
 
             if (recentLogs.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="padding: 15px; text-align: center; opacity: 0.9;">No recent activity recorded yet.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; opacity: 0.9;">No recent activity recorded yet.</td></tr>`;
                 return;
             }
 
@@ -136,14 +166,14 @@
                 const timeStr = log.timestamp_ms ? new Date(Number(log.timestamp_ms)).toLocaleTimeString() : 'N/A';
                 const eventType = log.event_type || 'ACCESS';
                 
-                // Comprehensive fallback check for all backend slot property naming variations
-                const rawSlot = log.fingerprint_slot_id !== undefined ? log.fingerprint_slot_id :
-                                log.slot_id !== undefined ? log.slot_id :
-                                log.assigned_slot !== undefined ? log.assigned_slot :
-                                log.user_slot !== undefined ? log.user_slot :
-                                log.fingerprint_id !== undefined ? log.fingerprint_id : null;
+                // Resolve slot ID from event log or lookup map
+                const lookupKeyName = log.full_name ? log.full_name.toLowerCase().trim() : '';
+                const lookupKeyEmp = log.employee_code ? log.employee_code.toLowerCase().trim() : '';
                 
-                const slotIdDisplay = (rawSlot !== null && rawSlot !== '' && rawSlot !== 'N/A') ? `#${rawSlot}` : 'N/A';
+                const resolvedSlot = log.slot_id || log.fingerprint_slot_id || log.assigned_slot || 
+                                     userSlotMap[lookupKeyName] || userSlotMap[lookupKeyEmp] || 'N/A';
+
+                const slotDisplay = resolvedSlot !== 'N/A' ? `#${resolvedSlot}` : 'N/A';
 
                 let badgeBg = '#27ae60';
                 let statusText = 'Granted';
@@ -159,11 +189,11 @@
                 }
 
                 return `
-                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-                        <td style="padding: 12px; color: #ffffff !important;">${timeStr}</td>
-                        <td style="padding: 12px; color: #ffffff !important;">${log.full_name || log.employee_code || 'Unknown'}</td>
-                        <td style="padding: 12px; color: #ffffff !important;">Slot ${slotIdDisplay}</td>
-                        <td style="padding: 12px;">
+                    <tr>
+                        <td>${timeStr}</td>
+                        <td>${log.full_name || log.employee_code || 'Unknown'}</td>
+                        <td>Slot ${slotDisplay}</td>
+                        <td>
                             <span style="background: ${badgeBg}; color: white; padding: 4px 10px; border-radius: 4px; font-weight: bold; font-size: 0.85em;">
                                 ${statusText}
                             </span>
