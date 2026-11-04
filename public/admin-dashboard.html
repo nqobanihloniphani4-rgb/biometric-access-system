@@ -16,13 +16,15 @@
         }
     </style>
 </head>
-<body >
-<nav class="navbar" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); border-radius: 8px; margin-bottom: 25px; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">        <h2>🔐 Security Portal</h2>
-<div class="nav-links" style="display: flex; gap: 20px; align-items: center;">
+<body>
+<nav class="navbar" style="display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); border-radius: 8px; margin-bottom: 25px; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">        
+    <h2>🔐 Security Portal</h2>
+    <div class="nav-links" style="display: flex; gap: 20px; align-items: center;">
         <a href="index.html" style="color: #e0f2fe; text-decoration: none; font-weight: 500;">Terminal Kiosk</a>
         <a href="admin-dashboard.html" class="active" style="color: #ffffff !important; text-decoration: none; font-weight: bold;">Personnel Management</a>
         <a href="attendance-logs.html" style="color: #e0f2fe; text-decoration: none; font-weight: 500;">Attendance Logs</a>
         <a href="#" id="logoutBtn" style="color: #e0f2fe; text-decoration: none; font-size: 0.9em; font-weight: 500;">Logout</a>
+    </div>
 </nav>
 
 <div class="container">
@@ -113,152 +115,133 @@
 
             </form>
         </div>
-    </div>
-</div>
 
-                    <!-- ROW 3: User Role, Fingerprint Slot ID, and Button side-by-side -->
-                    <div>
-                        <label>User Role</label>
-                        <select id="userRole" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                            <option value="employee">Standard Employee</option>
-                            <option value="admin">Administrator</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>Fingerprint Slot ID (1-127)</label>
-                        <input type="number" id="fingerprintSlotId" min="1" max="127" required placeholder="e.g. 5" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                    </div>
-                    <div style="display: flex; align-items: flex-end;">
-                        <button type="submit" style="width: 100%; padding: 9px; background: #1e293b; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Enroll Employee & Assign Slot</button>
-                    </div>
-                </form>
+        <!-- 2. REMOTE ESP32 HARDWARE ENROLLMENT TERMINAL (Middle) -->
+        <div style="background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); padding: 25px; border-radius: 8px; margin-bottom: 30px; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h3 style="margin-top: 0; color: #ffffff;">📡 Remote ESP32 Hardware Enrollment</h3>
+            <p style="font-size: 0.95em; color: #e0f2fe; margin-bottom: 15px;">Queue a slot ID to trigger the physical AS608 optical sensor over Wi-Fi (No Serial Monitor needed).</p>
+            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                <input type="number" id="remoteSlotInput" min="1" max="127" placeholder="Enter Slot ID (e.g., 5)" style="padding: 10px; width: 220px; border: 1px solid #7dd3fc; border-radius: 6px; background: #fff; color: #000;">
+                <button type="button" id="btnRemoteEnroll" style="background-color: #ffffff; color: #1e3a8a; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                    Trigger ESP32 Enrollment
+                </button>
             </div>
+            <p id="remoteEnrollStatus" style="margin-top: 10px; font-weight: bold; color: #f0fdf4; font-size: 0.9em;"></p>
+        </div>
 
-            <!-- 2. REMOTE ESP32 HARDWARE ENROLLMENT TERMINAL (Middle) -->
-                <div style="background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); padding: 25px; border-radius: 8px; margin-bottom: 30px; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                    <h3 style="margin-top: 0; color: #ffffff;">📡 Remote ESP32 Hardware Enrollment</h3>
-                    <p style="font-size: 0.95em; color: #e0f2fe; margin-bottom: 15px;">Queue a slot ID to trigger the physical AS608 optical sensor over Wi-Fi (No Serial Monitor needed).</p>
-                    <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                        <input type="number" id="remoteSlotInput" min="1" max="127" placeholder="Enter Slot ID (e.g., 5)" style="padding: 10px; width: 220px; border: 1px solid #7dd3fc; border-radius: 6px; background: #fff; color: #000;">
-                        <button type="button" id="btnRemoteEnroll" style="background-color: #ffffff; color: #1e3a8a; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">
-                            Trigger ESP32 Enrollment
-                        </button>
-                    </div>
-                    <p id="remoteEnrollStatus" style="margin-top: 10px; font-weight: bold; color: #f0fdf4; font-size: 0.9em;"></p>
-                </div>
-
-            <!-- 3. DIRECTORY TABLE (Bottom) -->
-            <h3>Enrolled Personnel Directory</h3>
-<div style="background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); padding: 25px; border-radius: 8px; margin-bottom: 30px; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <h3 style="margin-top: 0; color: #ffffff;">Enrolled Personnel Directory</h3>
-    <div style="overflow-x: auto;">
-        <table class="directory-table" style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85em;">
-            <thead>
-                <tr style="background: rgba(0, 0, 0, 0.2); color: white;">
-                    <th style="padding: 10px; text-align: left;">Slot ID</th>
-                    <th style="padding: 10px; text-align: left;">Full Name</th>
-                    <th style="padding: 10px; text-align: left;">ID Number</th>
-                    <th style="padding: 10px; text-align: left;">Employee Code</th>
-                    <th style="padding: 10px; text-align: left;">Contact</th>
-                    <th style="padding: 10px; text-align: left;">Email</th>
-                    <th style="padding: 10px; text-align: left;">Department</th>
-                    <th style="padding: 10px; text-align: left;">Fingerprint</th>
-                    <th style="padding: 10px; text-align: left;">Registered Date</th>
-                    <th style="padding: 10px; text-align: left;">Actions</th>
-                </tr>
-            </thead>
-            <tbody id="usersTable" style="color: #ffffff;">
-                <!-- Populated via fetchUsers() in app.js -->
-            </tbody>
-        </table>
-    </div>
-</div>
-
-    <!-- EDIT MODAL -->
-    <div id="editModal" class="kiosk-popup" style="display: none;">
-        <div class="kiosk-popup-content" style="text-align: left; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
-            <h3>Edit Employee Details</h3>
-            <form id="editForm" style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
-                <input type="hidden" id="editUserId">
-                <div style="margin-bottom: 5px;">
-                    <label>Full Name</label>
-                    <input type="text" id="editFullName" required style="width: 100%; padding: 8px;">
-                </div>
-                <div style="margin-bottom: 5px;">
-                    <label>ID Number</label>
-                    <input type="text" id="editIdNumber" required style="width: 100%; padding: 8px;">
-                </div>
-                <div style="margin-bottom: 5px;">
-                    <label>Employee Code</label>
-                    <input type="text" id="editEmployeeCode" required style="width: 100%; padding: 8px;">
-                </div>
-                <div style="margin-bottom: 5px;">
-                    <label>Contact Number</label>
-                    <input type="tel" id="editContactNumber" required style="width: 100%; padding: 8px;">
-                </div>
-                <div style="margin-bottom: 5px;">
-                    <label>Email Address</label>
-                    <input type="email" id="editEmail" required style="width: 100%; padding: 8px;">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label>Department</label>
-                    <select id="editDepartment" required style="width: 100%; padding: 8px;">
-                        <option value="Engineering">Engineering</option>
-                        <option value="ICT">ICT</option>
-                        <option value="Human Resources">Human Resources</option>
-                        <option value="Operations">Operations</option>
-                        <option value="Finance">Finance</option>
-                        <option value="Marketing">Marketing</option>
-                    </select>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <button type="submit" class="btn-primary" style="flex: 1; padding: 10px;">Save Changes</button>
-                    <button type="button" onclick="closeEditModal()" style="flex: 1; background-color: #7f8c8d; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 10px;">Cancel</button>
-                </div>
-            </form>
+        <!-- 3. DIRECTORY TABLE (Bottom) -->
+        <div style="background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); padding: 25px; border-radius: 8px; margin-bottom: 30px; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h3 style="margin-top: 0; color: #ffffff;">Enrolled Personnel Directory</h3>
+            <div style="overflow-x: auto;">
+                <table class="directory-table" style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85em;">
+                    <thead>
+                        <tr style="background: rgba(0, 0, 0, 0.2); color: white;">
+                            <th style="padding: 10px; text-align: left;">Slot ID</th>
+                            <th style="padding: 10px; text-align: left;">Full Name</th>
+                            <th style="padding: 10px; text-align: left;">ID Number</th>
+                            <th style="padding: 10px; text-align: left;">Employee Code</th>
+                            <th style="padding: 10px; text-align: left;">Contact</th>
+                            <th style="padding: 10px; text-align: left;">Email</th>
+                            <th style="padding: 10px; text-align: left;">Department</th>
+                            <th style="padding: 10px; text-align: left;">Fingerprint</th>
+                            <th style="padding: 10px; text-align: left;">Registered Date</th>
+                            <th style="padding: 10px; text-align: left;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTable" style="color: #ffffff;">
+                        <!-- Populated via fetchUsers() in app.js -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
+</div>
 
-    <script src="app.js"></script>
-    <script>
-    // Remote Hardware Enrollment Trigger Script
-    document.getElementById('btnRemoteEnroll').addEventListener('click', async () => {
-        const slotId = document.getElementById('remoteSlotInput').value.trim();
-        const statusEl = document.getElementById('remoteEnrollStatus');
-        
-        if (!slotId) {
-            alert('Please enter a valid fingerprint slot ID.');
-            return;
-        }
+<!-- EDIT MODAL -->
+<div id="editModal" class="kiosk-popup" style="display: none;">
+    <div class="kiosk-popup-content" style="text-align: left; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
+        <h3>Edit Employee Details</h3>
+        <form id="editForm" style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
+            <input type="hidden" id="editUserId">
+            <div style="margin-bottom: 5px;">
+                <label>Full Name</label>
+                <input type="text" id="editFullName" required style="width: 100%; padding: 8px;">
+            </div>
+            <div style="margin-bottom: 5px;">
+                <label>ID Number</label>
+                <input type="text" id="editIdNumber" required style="width: 100%; padding: 8px;">
+            </div>
+            <div style="margin-bottom: 5px;">
+                <label>Employee Code</label>
+                <input type="text" id="editEmployeeCode" required style="width: 100%; padding: 8px;">
+            </div>
+            <div style="margin-bottom: 5px;">
+                <label>Contact Number</label>
+                <input type="tel" id="editContactNumber" required style="width: 100%; padding: 8px;">
+            </div>
+            <div style="margin-bottom: 5px;">
+                <label>Email Address</label>
+                <input type="email" id="editEmail" required style="width: 100%; padding: 8px;">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label>Department</label>
+                <select id="editDepartment" required style="width: 100%; padding: 8px;">
+                    <option value="Engineering">Engineering</option>
+                    <option value="ICT">ICT</option>
+                    <option value="Human Resources">Human Resources</option>
+                    <option value="Operations">Operations</option>
+                    <option value="Finance">Finance</option>
+                    <option value="Marketing">Marketing</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" class="btn-primary" style="flex: 1; padding: 10px;">Save Changes</button>
+                <button type="button" onclick="closeEditModal()" style="flex: 1; background-color: #7f8c8d; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 10px;">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-        statusEl.style.color = '#e67e22';
-        statusEl.innerText = `Sending remote enrollment command for Slot #${slotId} to ESP32...`;
+<script src="app.js"></script>
+<script>
+// Remote Hardware Enrollment Trigger Script
+document.getElementById('btnRemoteEnroll').addEventListener('click', async () => {
+    const slotId = document.getElementById('remoteSlotInput').value.trim();
+    const statusEl = document.getElementById('remoteEnrollStatus');
+    
+    if (!slotId) {
+        alert('Please enter a valid fingerprint slot ID.');
+        return;
+    }
 
-        try {
-            const token = localStorage.getItem('adminToken');
-            const res = await fetch('/api/access/enroll-slot', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ slot_id: parseInt(slotId) })
-            });
+    statusEl.style.color = '#e67e22';
+    statusEl.innerText = `Sending remote enrollment command for Slot #${slotId} to ESP32...`;
 
-            const data = await res.json();
-            if (res.ok) {
-                statusEl.style.color = '#27ae60';
-                statusEl.innerText = `✅ Slot #${slotId} queued successfully! Place finger on the physical ESP32 scanner.`;
-            } else {
-                statusEl.style.color = '#c0392b';
-                statusEl.innerText = `❌ Error: ${data.error || data.message}`;
-            }
-        } catch (err) {
-            console.error('Enrollment error:', err);
+    try {
+        const token = localStorage.getItem('adminToken');
+        const res = await fetch('/api/access/enroll-slot', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ slot_id: parseInt(slotId) })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+            statusEl.style.color = '#27ae60';
+            statusEl.innerText = `✅ Slot #${slotId} queued successfully! Place finger on the physical ESP32 scanner.`;
+        } else {
             statusEl.style.color = '#c0392b';
-            statusEl.innerText = `❌ Server connection failed.`;
+            statusEl.innerText = `❌ Error: ${data.error || data.message}`;
         }
-    });
-    </script>
+    } catch (err) {
+        console.error('Enrollment error:', err);
+        statusEl.style.color = '#c0392b';
+        statusEl.innerText = `❌ Server connection failed.`;
+    }
+});
+</script>
 </body>
 </html>
