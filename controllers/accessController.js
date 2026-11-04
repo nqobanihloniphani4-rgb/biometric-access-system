@@ -6,19 +6,6 @@ const bcrypt = require('bcrypt');
 const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Inside your triggerDuress function:
-try {
-    const data = await resend.emails.send({
-        from: 'Access Control <onboarding@resend.dev>',
-        to: process.env.SECURITY_EMAIL || 'security@yourcompany.com',
-        subject: '🚨 URGENT: Silent Duress Alert Triggered at Gate!',
-        text: `EMERGENCY ALERT!\n\nA silent duress button was triggered.\n\nEmployee Details:\n- Name: ${user.full_name}\n- Employee Code: ${user.employee_code}\n- Department: ${user.department || 'N/A'}\n\nThe door has been unlocked covertly. Please check security premises immediately.`,
-    });
-    console.log('Security email sent successfully via Resend:', data);
-} catch (mailErr) {
-    console.error('Error sending security email via Resend:', mailErr);
-}
-
 // Register / Create New User
 exports.createUser = async (req, res) => {
     const { 
