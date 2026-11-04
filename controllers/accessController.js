@@ -36,7 +36,9 @@ exports.createUser = async (req, res) => {
 
     try {
         let hashedPassword = null;
-        if ((role === 'ADMIN' || role === 'admin') && password) {
+        const normalizedRole = role ? role.toUpperCase() : 'EMPLOYEE';
+
+        if (normalizedRole === 'ADMIN' && password) {
             hashedPassword = await bcrypt.hash(password, 10);
         }
 
@@ -52,7 +54,7 @@ exports.createUser = async (req, res) => {
             contact_number || null, 
             email || null, 
             department || null, 
-            role ? role.toUpperCase() : 'EMPLOYEE', 
+            normalizedRole, 
             fingerprint_slot_id ? parseInt(fingerprint_slot_id) : null, 
             exit_slot_id ? parseInt(exit_slot_id) : null, 
             duress_slot_id ? parseInt(duress_slot_id) : null,
@@ -60,10 +62,27 @@ exports.createUser = async (req, res) => {
         ];
 
         const result = await pool.query(query, values);
+        const newUser = result.rows[0];
+
+        // --- AUTOMATIC ADMIN SYNC FOR LOGIN ---
+        if (normalizedRole === 'ADMIN') {
+            const adminUsername = email || employee_code;
+            if (adminUsername && hashedPassword) {
+                await pool.query(
+                    `INSERT INTO admin_users (username, password_hash, role) 
+                     VALUES ($1, $2, $3)
+                     ON CONFLICT (username) 
+                     DO UPDATE SET password_hash = $2, role = $3`,
+                    [adminUsername, hashedPassword, 'ADMIN']
+                );
+                console.log(`[ADMIN SYNC] Synced new admin to admin_users: ${adminUsername}`);
+            }
+        }
+
         res.status(201).json({ 
             success: true, 
             message: 'User registered successfully', 
-            user: result.rows[0] 
+            user: newUser 
         });
     } catch (err) {
         console.error('Create user error:', err);
@@ -392,24 +411,68 @@ exports.getAllUsers = async (req, res) => {
 // Update User Details
 exports.updateUser = async (req, res) => {
     const { id } = req.params;
-    const { full_name, id_number, employee_code, contact_number, email, department } = req.body;
+    const { full_name, id_number, employee_code, contact_number, email, department, role, password } = req.body;
 
     try {
-        const query = `
+        let hashedPassword = undefined;
+        const normalizedRole = role ? role.toUpperCase() : undefined;
+
+        let query = `
             UPDATE users 
             SET full_name = $1, id_number = $2, employee_code = $3, contact_number = $4, email = $5, department = $6
-            WHERE id = $7
-            RETURNING *;
         `;
-        const values = [full_name, id_number, employee_code, contact_number, email, department, id];
+        let values = [full_name, id_number, employee_code, contact_number, email, department];
+
+        if (normalizedRole) {
+            query += `, role = $${values.length + 1}`;
+            values.push(normalizedRole);
+        }
+
+        if (password) {
+            hashedPassword = await bcrypt.hash(password, 10);
+            query += `, password_hash = $${values.length + 1}`;
+            values.push(hashedPassword);
+        }
+
+        query += ` WHERE id = $${values.length + 1} RETURNING *;`;
+        values.push(id);
+
         const result = await pool.query(query, values);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ success: false, error: 'User not found.' });
         }
 
-        res.json({ success: true, message: 'User updated successfully', user: result.rows[0] });
+        const updatedUser = result.rows[0];
+
+        // --- SYNC ADMIN CHANGES TO admin_users ---
+        if (updatedUser.role === 'ADMIN') {
+            const adminUsername = updatedUser.email || updatedUser.employee_code;
+            if (adminUsername) {
+                if (updatedUser.password_hash) {
+                    await pool.query(
+                        `INSERT INTO admin_users (username, password_hash, role) 
+                         VALUES ($1, $2, $3)
+                         ON CONFLICT (username) 
+                         DO UPDATE SET password_hash = $2, role = $3`,
+                        [adminUsername, updatedUser.password_hash, 'ADMIN']
+                    );
+                } else {
+                    await pool.query(
+                        `INSERT INTO admin_users (username, role) 
+                         VALUES ($1, $2)
+                         ON CONFLICT (username) 
+                         DO UPDATE SET role = $2`,
+                        [adminUsername, 'ADMIN']
+                    );
+                }
+                console.log(`[ADMIN SYNC] Updated admin credentials for: ${adminUsername}`);
+            }
+        }
+
+        res.json({ success: true, message: 'User updated successfully', user: updatedUser });
     } catch (err) {
+        console.error('Update user error:', err);
         res.status(500).json({ success: false, error: err.message });
     }
 };
@@ -419,6 +482,16 @@ exports.deleteUser = async (req, res) => {
     const { id } = req.params;
 
     try {
+        // Optionally clean up admin_users if needed
+        const userRes = await pool.query('SELECT email, employee_code FROM users WHERE id = $1', [id]);
+        if (userRes.rows.length > 0) {
+            const u = userRes.rows[0];
+            const username = u.email || u.employee_code;
+            if (username) {
+                await pool.query('DELETE FROM admin_users WHERE username = $1', [username]);
+            }
+        }
+
         const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING *;', [id]);
 
         if (result.rows.length === 0) {
