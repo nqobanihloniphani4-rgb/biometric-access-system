@@ -4,16 +4,21 @@ const { Parser } = require('json2csv');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcrypt');
 
-// Configure the email transporter for security alerts (Updated for Render)
-const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: 587,
-    secure: false, // Must be false for port 587
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-});
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Inside your triggerDuress function:
+try {
+    const data = await resend.emails.send({
+        from: 'Access Control <onboarding@resend.dev>',
+        to: process.env.SECURITY_EMAIL || 'security@yourcompany.com',
+        subject: '🚨 URGENT: Silent Duress Alert Triggered at Gate!',
+        text: `EMERGENCY ALERT!\n\nA silent duress button was triggered.\n\nEmployee Details:\n- Name: ${user.full_name}\n- Employee Code: ${user.employee_code}\n- Department: ${user.department || 'N/A'}\n\nThe door has been unlocked covertly. Please check security premises immediately.`,
+    });
+    console.log('Security email sent successfully via Resend:', data);
+} catch (mailErr) {
+    console.error('Error sending security email via Resend:', mailErr);
+}
 
 // Register / Create New User
 exports.createUser = async (req, res) => {
@@ -184,40 +189,48 @@ exports.triggerDuress = async (req, res) => {
             queryParam = employee_code;
         }
 
-        const userResult = await pool.query(userQuery, [queryParam]);
-        if (userResult.rows.length === 0) {
-            return res.status(404).json({ success: false, error: 'Employee not found.' });
-        }
-
-        const user = userResult.rows[0];
-
-        await pool.query(
-            'INSERT INTO attendance_logs (user_id, event_type) VALUES ($1, $2)',
-            [user.id, 'DURESS_OPEN']
-        );
-
-        await pool.query(
-            'INSERT INTO emergency_alerts (user_id, alert_type) VALUES ($1, $2)',
-            [user.id, 'SILENT_DURESS']
-        );
-
-        const mailOptions = {
-            from: `"Access Control Security" <${process.env.EMAIL_USER}>`,
-            to: process.env.SECURITY_EMAIL || 'security@yourcompany.com',
-            subject: '🚨 URGENT: Silent Duress Alert Triggered at Gate!',
-            text: `EMERGENCY ALERT!\n\nA silent duress button was triggered.\n\nEmployee Details:\n- Name: ${user.full_name}\n- Employee Code: ${user.employee_code}\n- Department: ${user.department || 'N/A'}\n\nThe door has been unlocked covertly. Please check security premises immediately.`,
+        const userResult = queryParam ? await pool.query(userQuery, [queryParam]) : { rows: [] };
+        
+        const user = userResult.rows.length > 0 ? userResult.rows[0] : {
+            id: null,
+            full_name: 'Unknown / Gate Panic Button',
+            employee_code: 'EMERGENCY',
+            department: 'Security'
         };
 
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.error('Error sending security email:', error);
-            } else {
-                console.log('Security email sent successfully:', info.response);
-            }
-        });
+        if (user.id) {
+            await pool.query(
+                'INSERT INTO attendance_logs (user_id, event_type) VALUES ($1, $2)',
+                [user.id, 'DURESS_OPEN']
+            );
+
+            await pool.query(
+                'INSERT INTO emergency_alerts (user_id, alert_type) VALUES ($1, $2)',
+                [user.id, 'SILENT_DURESS']
+            );
+        } else {
+            await pool.query(
+                'INSERT INTO emergency_alerts (alert_type, status) VALUES ($1, $2)',
+                ['SILENT_DURESS', 'ACTIVE']
+            );
+        }
+
+        // Send email via Resend over HTTPS (Port 443 - bypasses Render port restrictions)
+        try {
+            const data = await resend.emails.send({
+                from: 'Access Control <onboarding@resend.dev>',
+                to: process.env.SECURITY_EMAIL || 'security@yourcompany.com',
+                subject: '🚨 URGENT: Silent Duress Alert Triggered at Gate!',
+                text: `EMERGENCY ALERT!\n\nA silent duress button was triggered.\n\nEmployee Details:\n- Name: ${user.full_name}\n- Employee Code: ${user.employee_code}\n- Department: ${user.department || 'N/A'}\n\nThe door has been unlocked covertly. Please check security premises immediately.`,
+            });
+            console.log('Security email sent successfully via Resend:', data);
+        } catch (mailErr) {
+            console.error('Error sending security email via Resend:', mailErr);
+        }
 
         res.json({ success: true, message: 'Duress alert triggered covertly and security notified' });
     } catch (err) {
+        console.error('Trigger Duress Error:', err);
         res.status(500).json({ success: false, error: err.message });
     }
 };
