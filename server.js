@@ -59,6 +59,34 @@ app.post('/api/access/enroll/complete', (req, res) => {
     res.json({ success: true, message: "Queue cleared." });
 });
 
+// --- NEW: Handle Unknown / Denied Access Events for Live Terminal ---
+app.post('/api/events/access-denied', async (req, res) => {
+    try {
+        const { message, fingerprint_slot_id } = req.body;
+        const denyMessage = message || `🚨 ACCESS DENIED: Unknown Fingerprint Scanned (Slot #${fingerprint_slot_id || 'N/A'})`;
+
+        console.log(`[TERMINAL LOG] ${denyMessage}`);
+
+        // If you use req.app.get('io') or global broadcasting for live terminal feed
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('terminal_log', {
+                timestamp: new Date().toISOString(),
+                status: 'DENIED',
+                message: denyMessage
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Denied event logged to terminal successfully."
+        });
+    } catch (err) {
+        console.error('Access Denied Logging Error:', err.message);
+        return res.status(500).json({ error: `Failed to log denied event: ${err.message}` });
+    }
+});
+
 // NEW: Handle user enrollment and fingerprint slot assignment (Fixes 404 Error)
 app.post('/api/enroll', async (req, res) => {
     try {
