@@ -6,7 +6,6 @@
     <title>Biometric Door Terminal Kiosk</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Hard-override any external CSS hiding table header backgrounds */
         .recent-table th {
             background-color: #0f172a !important;
             color: #ffffff !important;
@@ -33,9 +32,8 @@
 
     <div class="container" style="max-width: 1000px; margin: 40px auto; padding: 0 20px;">
         
-        <!-- LIVE ACCESS EVENT LOG WITH FINGERPRINT PICTURE WATERMARK (FULL WIDTH) -->
+        <!-- LIVE ACCESS EVENT LOG WITH FINGERPRINT PICTURE WATERMARK -->
         <div class="portal-card" style="position: relative; overflow: hidden; padding: 50px;">
-            <!-- Centered Picture Watermark -->
             <div style="
                 position: absolute;
                 top: 50%;
@@ -96,7 +94,7 @@
         </div>
     </div>
 
-<script src="app.js"></script>
+    <script src="app.js"></script>
 <script>
     async function pollLatestLogs() {
         try {
@@ -108,7 +106,7 @@
                 const statusText = document.getElementById('statusText');
                 
                 if (statusText) {
-                    const logTime = Number(latest.timestamp_ms);
+                    const logTime = Number(latest.timestamp_ms || new Date(latest.timestamp).getTime());
                     const currentTime = Date.now();
                     const ageInSeconds = (currentTime - logTime) / 1000;
 
@@ -134,28 +132,10 @@
 
     async function loadRecentTerminalActivity() {
         try {
-            // Fetch both logs and users directory simultaneously
-            const [logsRes, usersRes] = await Promise.all([
-                fetch('/api/events/latest'),
-                fetch('/api/users').catch(() => ({ ok: false }))
-            ]);
-
-            if (!logsRes.ok) return;
-            const logs = await logsRes.json();
+            const response = await fetch('/api/events/latest');
+            if (!response.ok) return;
+            const logs = await response.json();
             
-            // Build a lookup map for slots by name and employee code
-            let slotMap = {};
-            if (usersRes.ok) {
-                const users = await usersRes.json();
-                users.forEach(u => {
-                    const slot = u.fingerprint_slot_id || u.slot_id;
-                    if (slot) {
-                        if (u.full_name) slotMap[u.full_name.toLowerCase().trim()] = slot;
-                        if (u.employee_code) slotMap[u.employee_code.toLowerCase().trim()] = slot;
-                    }
-                });
-            }
-
             const tbody = document.getElementById('recentActivityTable');
             if (!tbody) return;
 
@@ -167,14 +147,11 @@
             }
 
             tbody.innerHTML = recentLogs.map(log => {
-                const timeStr = log.timestamp_ms ? new Date(Number(log.timestamp_ms)).toLocaleTimeString() : 'N/A';
-                const eventType = log.event_type || 'ACCESS';
+                const timeSource = log.timestamp_ms || log.timestamp;
+                const timeStr = timeSource ? new Date(Number(timeSource) || timeSource).toLocaleTimeString() : 'N/A';
+                const eventType = log.event_type || log.status || 'ACCESS';
                 
-                const nameKey = log.full_name ? log.full_name.toLowerCase().trim() : '';
-                const codeKey = log.employee_code ? log.employee_code.toLowerCase().trim() : '';
-
-                // Try to get slot from log directly, then fallback to user profile lookup map
-                const slotId = log.fingerprint_slot_id || log.slot_id || slotMap[nameKey] || slotMap[codeKey] || 'N/A';
+                const slotId = log.slot_id || log.fingerprint_slot_id || 'N/A';
                 const slotDisplay = slotId !== 'N/A' ? `#${slotId}` : 'N/A';
 
                 let badgeBg = '#27ae60';

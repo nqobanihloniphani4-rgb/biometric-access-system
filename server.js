@@ -22,6 +22,37 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/access', accessRoutes);
+
+// --- EXPLICIT /api/events/latest ROUTE WITH SLOT ID JOIN ---
+app.get('/api/events/latest', async (req, res) => {
+    try {
+        let result;
+        try {
+            result = await db.query(
+                `SELECT l.*, u.full_name, u.employee_code, u.department, u.fingerprint_slot_id AS slot_id 
+                 FROM attendance_logs l 
+                 JOIN users u ON l.user_id = u.id 
+                 ORDER BY l.timestamp DESC LIMIT 20`
+            );
+        } catch (e) {
+            try {
+                result = await db.query(
+                    `SELECT e.*, u.full_name, u.employee_code, u.department, u.fingerprint_slot_id AS slot_id 
+                     FROM attendance_events e 
+                     JOIN users u ON e.user_id = u.id 
+                     ORDER BY e.timestamp DESC LIMIT 20`
+                );
+            } catch (err) {
+                result = { rows: [] };
+            }
+        }
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching latest events:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.use('/api/events', accessRoutes);
 
 // --- REMOTE ESP32 HARDWARE ENROLLMENT QUEUE STATE ---
