@@ -121,15 +121,14 @@ async function handleKioskScan(isDuress) {
         }, 5000);
     }
 
-// 3. ROLE SELECT TOGGLE FOR PASSWORD VISIBILITY
-const roleSelect = document.getElementById('roleSelect');
-const adminSecuritySection = document.getElementById('adminSecuritySection'); // Matches HTML ID
-const adminPasswordInput = document.getElementById('adminPasswordInput');     // Matches HTML ID
+const userRoleSelect = document.getElementById('userRole');
+const adminSecuritySection = document.getElementById('adminSecuritySection');
+const adminPasswordInput = document.getElementById('adminPasswordInput');
 
-if (roleSelect && adminSecuritySection) {
-    roleSelect.addEventListener('change', function() {
-        // Check for both 'ADMIN' and 'Administrator' depending on your option value
-        if (this.value === 'ADMIN' || this.value === 'Administrator') {
+if (userRoleSelect && adminSecuritySection) {
+    userRoleSelect.addEventListener('change', function() {
+        // Matches lowercase 'admin' from your HTML option value
+        if (this.value === 'admin') {
             adminSecuritySection.style.display = 'block';
             if (adminPasswordInput) adminPasswordInput.required = true;
         } else {
