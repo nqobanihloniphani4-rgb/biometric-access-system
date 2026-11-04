@@ -155,6 +155,8 @@ if (userRoleSelect && adminSecuritySection) {
                 contact_number: document.getElementById('contactNumber').value.trim(),
                 email: document.getElementById('email').value.trim(),
                 department: document.getElementById('department').value.trim(),
+                role: document.getElementById('userRole') ? document.getElementById('userRole').value : 'EMPLOYEE',
+                admin_password: document.getElementById('adminPasswordInput') ? document.getElementById('adminPasswordInput').value.trim() : '',
                 fingerprint_slot_id: parseInt(document.getElementById('fingerprintSlotId').value),
                 duress_slot_id: null,
                 exit_slot_id: null
