@@ -26,56 +26,60 @@
 </nav>
 
 <div class="container">
-        <div class="card">
-            <h2>👥 Personnel Management & Biometric Enrollment</h2>
-            <p style="color: #666; margin-bottom: 20px;">Register new biometric templates or manage existing enrolled personnel records.</p>
-            
-            <!-- 1. ENROLLMENT FORM WITH ALL FIELDS (Moved to Top) -->
-<div style="background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); padding: 20px; border-radius: 8px; margin-bottom: 30px; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <h3 style="margin-top: 0; color: #ffffff;">Enroll New Personnel</h3>
-    <form id="registerForm" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
-                    <div>
-                        <label>Full Name</label>
-                        <input type="text" id="fullName" required placeholder="e.g. John Doe" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                    </div>
-                    <div>
-                        <label>ID Number</label>
-                        <input type="text" id="idNumber" placeholder="e.g. 9801015800080" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                    </div>
-                    <div>
-                        <label>Employee Code</label>
-                        <input type="text" id="empCode" required placeholder="e.g. EMP-101" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                    </div>
-                    <div>
-                        <label>Contact Number</label>
-                        <input type="text" id="contactNumber" placeholder="e.g. 0712345678" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                    </div>
-                    <div>
-                        <label>Email Address</label>
-                        <input type="email" id="email" placeholder="e.g. john@example.com" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                    </div>
-                    <div>
-                        <label>Department</label>
-                        <select id="department" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                            <option value="" disabled selected>Select Department</option>
-                            <option value="Engineering">Engineering</option>
-                            <option value="ICT">ICT</option>
-                            <option value="Human Resources">Human Resources</option>
-                            <option value="Operations">Operations</option>
-                            <option value="Finance">Finance</option>
-                            <option value="Marketing">Marketing</option>
-                        </select>
-                    </div>
+    <div class="card">
+        <h2>👥 Personnel Management & Biometric Enrollment</h2>
+        <p style="color: #666; margin-bottom: 20px;">Register new biometric templates or manage existing enrolled personnel records.</p>
+        
+        <!-- 1. ENROLLMENT FORM WITH ALL FIELDS (Moved to Top) -->
+        <div style="background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%); padding: 20px; border-radius: 8px; margin-bottom: 30px; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <h3 style="margin-top: 0; color: #ffffff;">Enroll New Personnel</h3>
+            <form id="registerForm" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                <div>
+                    <label>Full Name</label>
+                    <input type="text" id="fullName" required placeholder="e.g. John Doe" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label>ID Number (13 Digits)</label>
+                    <input type="text" id="idNumberInput" name="id_number" maxlength="13" minlength="13" pattern="\d{13}" title="ID number must be exactly 13 digits" placeholder="e.g. 980101580008" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label>Employee Code</label>
+                    <input type="text" id="empCode" required placeholder="e.g. EMP-101" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label>Contact Number (10 Digits)</label>
+                    <input type="text" id="contactNumber" name="contact_number" maxlength="10" minlength="10" pattern="\d{10}" title="Contact number must be exactly 10 digits" placeholder="e.g. 0712345678" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label>Email Address</label>
+                    <input type="email" id="email" placeholder="e.g. john@example.com" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div>
+                    <label>Department</label>
+                    <select id="department" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        <option value="" disabled selected>Select Department</option>
+                        <option value="Engineering">Engineering</option>
+                        <option value="ICT">ICT</option>
+                        <option value="Human Resources">Human Resources</option>
+                        <option value="Operations">Operations</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Marketing">Marketing</option>
+                    </select>
+                </div>
 
-                    <!-- ADMIN SECURITY SECTION (Hidden by default, spans all 3 columns if triggered) -->
-                    <div id="adminSecuritySection" style="grid-column: span 3; display: none; background: #fff3cd; padding: 15px; border: 1px solid #ffeeba; border-radius: 6px;">
-                        <h4 style="margin-top: 0; color: #856404;">🔐 Admin Security Credentials Setup</h4>
-                        <p style="font-size: 13px; color: #666;">An auto-generated secure password will be assigned to this administrator upon registration, or you can specify one below.</p>
-                        <label>Admin Password Option</label>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <input type="password" id="adminPasswordInput" placeholder="Leave blank to auto-generate secure password" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                        </div>
+                <!-- ADMIN SECURITY SECTION (Hidden by default, spans all 3 columns if triggered) -->
+                <div id="adminSecuritySection" style="grid-column: span 3; display: none; background: #fff3cd; padding: 15px; border: 1px solid #ffeeba; border-radius: 6px;">
+                    <h4 style="margin-top: 0; color: #856404;">🔐 Admin Security Credentials Setup</h4>
+                    <p style="font-size: 13px; color: #666;">An auto-generated secure password will be assigned to this administrator upon registration, or you can specify one below.</p>
+                    <label style="color: #333;">Admin Password Option</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="password" id="adminPasswordInput" placeholder="Leave blank to auto-generate secure password" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
                     </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
                     <!-- ROW 3: User Role, Fingerprint Slot ID, and Button side-by-side -->
                     <div>

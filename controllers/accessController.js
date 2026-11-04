@@ -22,9 +22,21 @@ exports.createUser = async (req, res) => {
         password 
     } = req.body;
 
+    // STRICT DIGIT LENGTH VALIDATION (10 digits for contact, 13 digits for ID)
+    const contactRegex = /^\d{10}$/;
+    const idRegex = /^\d{13}$/;
+
+    if (contact_number && !contactRegex.test(contact_number)) {
+        return res.status(400).json({ success: false, error: 'Contact number must be exactly 10 digits.' });
+    }
+
+    if (id_number && !idRegex.test(id_number)) {
+        return res.status(400).json({ success: false, error: 'ID number must be exactly 13 digits.' });
+    }
+
     try {
         let hashedPassword = null;
-        if (role === 'ADMIN' && password) {
+        if ((role === 'ADMIN' || role === 'admin') && password) {
             hashedPassword = await bcrypt.hash(password, 10);
         }
 
@@ -40,7 +52,7 @@ exports.createUser = async (req, res) => {
             contact_number || null, 
             email || null, 
             department || null, 
-            role || 'EMPLOYEE', 
+            role ? role.toUpperCase() : 'EMPLOYEE', 
             fingerprint_slot_id ? parseInt(fingerprint_slot_id) : null, 
             exit_slot_id ? parseInt(exit_slot_id) : null, 
             duress_slot_id ? parseInt(duress_slot_id) : null,
