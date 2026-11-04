@@ -4,11 +4,11 @@ const { Parser } = require('json2csv');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcrypt');
 
-// Configure the email transporter for security alerts
+// Configure the email transporter for security alerts (Updated for Render)
 const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: process.env.EMAIL_PORT || 465,
-    secure: true,
+    port: 587,
+    secure: false, // Must be false for port 587
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
