@@ -141,7 +141,7 @@ if (userRoleSelect && adminSecuritySection) {
     });
 }
 
-    // 4. HANDLE NEW PERSONNEL REGISTRATION & FINGERPRINT SLOT ENROLLMENT
+// 4. HANDLE NEW PERSONNEL REGISTRATION & FINGERPRINT SLOT ENROLLMENT
     const registerForm = document.getElementById('registerForm');
     if (registerForm) {
         registerForm.addEventListener('submit', async (e) => {
@@ -150,7 +150,7 @@ if (userRoleSelect && adminSecuritySection) {
 
             const payload = {
                 full_name: document.getElementById('fullName').value.trim(),
-                id_number: document.getElementById('idNumber').value.trim(),
+                id_number: document.getElementById('idNumberInput').value.trim(), // Fixed ID matching HTML
                 employee_code: document.getElementById('empCode').value.trim(),
                 contact_number: document.getElementById('contactNumber').value.trim(),
                 email: document.getElementById('email').value.trim(),
@@ -178,7 +178,7 @@ if (userRoleSelect && adminSecuritySection) {
                     await triggerHardwareEnrollment(payload.fingerprint_slot_id);
 
                     registerForm.reset();
-                    if (passwordGroup) passwordGroup.style.display = 'none';
+                    // Cleaned up missing passwordGroup reference
                     fetchUsers();
                 } else {
                     alert(data.error || data.message || 'Failed to register personnel.');
