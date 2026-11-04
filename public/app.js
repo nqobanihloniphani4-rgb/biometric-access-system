@@ -223,7 +223,7 @@ if (userRoleSelect && adminSecuritySection) {
                         <td style="padding: 12px;">${escapeHtml(user.contact_number || 'N/A')}</td>
                         <td style="padding: 12px;">${escapeHtml(user.email || 'N/A')}</td>
                         <td style="padding: 12px;">${escapeHtml(user.department)}</td>
-                        <td style="padding: 12px;"><span style="background: #e2e8f0; padding: 3px 8px; border-radius: 4px; font-weight: bold;">Slot #${user.fingerprint_slot_id || 'N/A'}</span></td>
+                        <td style="padding: 12px;"><span style="background: #e2e8f0; color: #0f172a; padding: 3px 8px; border-radius: 4px; font-weight: bold;">Slot #${user.fingerprint_slot_id || 'N/A'}</span></td>
                         <td style="padding: 12px;">${user.created_at ? new Date(user.created_at).toISOString().split('T')[0] : 'N/A'}</td>
                         <td style="padding: 12px;">
                         <button class="btn-edit-user" 
